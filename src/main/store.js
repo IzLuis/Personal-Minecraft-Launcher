@@ -49,4 +49,8 @@ export const SETTINGS_DEFAULTS = {
   curseforgeApiKey: '',
   keepLauncherOpen: true,
   showSnapshots: false,
+  language: 'auto',        // 'auto' | 'en' | 'es'
+  groupConfigUrl: '',      // empty = baked-in DEFAULT_GROUP_CONFIG_URL
+  seenAnnouncements: [],   // announcement ids already shown
+  knownGroupPacks: [],     // pack ids already seen (for "new pack!" toasts)
 };

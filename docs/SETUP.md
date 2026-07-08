@@ -1,108 +1,112 @@
-# Setup: from zero to your friends playing
+# IzLauncher setup: from zero to your friends playing
 
-Follow these tasks in order. Tasks 1–3 get *you* running; 4–6 get *your friends* running;
-7 is ongoing life as the group's pack curator.
+Follow these tasks in order. Tasks 1–3 get *you* running; 4–6 wire up your group's
+remote control; 7–8 get friends installed; 9 is the routine you'll repeat forever.
 
 ---
 
 ## Task 1 — Run the launcher on your machine
 
 1. Install **Node.js 22 or newer** from https://nodejs.org (LTS is fine).
-2. Clone your repo and install dependencies:
+2. Clone your repo and run it:
    ```bash
    git clone https://github.com/IzLuis/Personal-Minecraft-Launcher.git
    cd Personal-Minecraft-Launcher
    npm install
    npm start
    ```
-3. The launcher window opens. Click the account chip (top-left) → **Sign in with
-   Microsoft** and log in with an account that owns Minecraft.
-4. Click **＋ New**, pick a Minecraft version (e.g. `1.21.1`), loader `vanilla`, and press
-   **Play**. First launch downloads the game + a Java runtime — later launches are instant.
+3. Account chip (top-left) → **Sign in with Microsoft**.
+4. **＋ New** → pick a version → **Play** to sanity-check.
 
-✅ You now have a working launcher. Everything below is distribution and sharing.
+## Task 2 — (Optional) CurseForge API key
 
-## Task 2 — (Optional but recommended) CurseForge API key
+Only if you'll use CurseForge packs/mods (Modrinth needs nothing): free key at
+https://console.curseforge.com → **API keys** → paste in **Settings → CurseForge**.
 
-Only needed if your group uses CurseForge packs/mods. Modrinth needs no key.
+## Task 3 — Language
 
-1. Go to https://console.curseforge.com → sign up (free) → **API keys** → copy your key.
-2. In the launcher: **Settings → CurseForge → API key**, paste, **Save settings**.
+**Settings → Idioma**: Auto detects the system language (Spanish for most of your
+friends). You can force Español/English anytime; it applies instantly.
 
-Without a key the launcher falls back to CurseForge's public download endpoint, which
-works for most mods but gives no integrity hashes and occasionally fails for mods whose
-authors disabled third-party downloads.
+## Task 4 — Create your group's control repo ⭐
 
-## Task 3 — Decide your Minecraft accounts policy
+This one file is your remote control for every friend's launcher:
 
-The launcher requires Microsoft sign-in. For friends on pirated copies: that's not
-something this launcher supports — Java Edition regularly goes on sale, and one Game Pass
-/ Microsoft account per person is the clean way to get everyone legit. Offline profiles
-(playing without internet) unlock only after a real account has signed in on that
-launcher install.
+1. On GitHub create a **public** repo named `izlauncher-config`.
+2. Add a file `izlauncher.json` — copy the example from
+   [GROUP-CONFIG.md](GROUP-CONFIG.md) and edit `groupName`, `discordUrl`, your packs
+   and a welcome announcement.
+3. Your raw URL is:
+   `https://raw.githubusercontent.com/IzLuis/izlauncher-config/main/izlauncher.json`
 
-## Task 4 — Build installers for your friends
+## Task 5 — Bake your config URL into the launcher
 
-Your repo has CI that does this for you:
+Open `src/main/group.js` and set the constant near the top:
 
-1. Push this project to GitHub (keep the repo **public** so releases are downloadable
-   and the launcher self-update works without tokens).
-2. Create a version tag:
-   ```bash
-   git tag v0.1.0
-   git push --tags
-   ```
-3. GitHub → your repo → **Actions**: the `Build` workflow runs tests, then builds
-   Windows (`.exe`), macOS (`.dmg`) and Linux (`.AppImage`) installers and attaches them
-   to a **Release**.
-4. Check the **Releases** page — installers should be attached to `v0.1.0`.
+```js
+export const DEFAULT_GROUP_CONFIG_URL =
+  'https://raw.githubusercontent.com/IzLuis/izlauncher-config/main/izlauncher.json';
+```
 
-To build locally instead: `npm run dist:win` (or `dist:mac` / `dist:linux`) → files in `dist/`.
+(It already points there — only edit if you named the repo differently.) This is what
+makes friends' launchers "just know" about your group with zero setup on their side.
 
-> **Windows SmartScreen note:** unsigned installers show "Windows protected your PC".
-> Friends click **More info → Run anyway**. Code-signing certificates remove this but
-> cost money; for a friend group, "Run anyway" is the normal path. On macOS,
-> right-click → Open the first time.
+Run `npm start` and check the **Group** and **News** tabs load your config.
 
-## Task 5 — Friends install the launcher
+## Task 6 — Build installers
 
-Send them the Releases link:
+```bash
+git add -A && git commit -m "My group config"
+git tag v0.2.0
+git push && git push --tags
+```
+
+GitHub **Actions** runs tests, builds Windows/macOS/Linux installers and attaches them
+to a **Release** automatically. Keep the launcher repo **public** — that's what lets
+installed launchers self-update without any tokens.
+
+> Local alternative: `npm run dist:win` → `dist/IzLauncher-…-Setup.exe`.
+
+## Task 7 — Friends install (the only thing they ever do)
+
+Send them one link:
 `https://github.com/IzLuis/Personal-Minecraft-Launcher/releases/latest`
 
-They: download the installer for their OS → install → sign in with their Microsoft
-account. When you later tag `v0.2.0`, their launcher updates itself automatically.
+They download the installer, click through SmartScreen ("More info → Run anyway" — the
+build is unsigned, which is normal for hobby apps), sign in with their Microsoft
+account, and they're done **forever**:
 
-## Task 6 — Create the group's pack repository
+- Your packs appear in their **Group** tab → one click to install.
+- Pack updates → banner → one click.
+- **Launcher** updates → downloaded automatically, "Restart to update" button appears.
+- Announcements pop up when you publish them. Discord button takes them to your server.
 
-This is the channel your modpack travels through:
+## Task 8 — Publish your first pack
 
-1. On GitHub, create a new **public** repo, e.g. `IzLuis/gang-pack`. A README is enough;
-   the pack lives in release assets.
-2. Build your pack in the launcher (see [AUTHORING.md](AUTHORING.md)), then
-   **Instance settings → Export as .mrpack**.
-3. On the pack repo: **Releases → Draft a new release** → tag `1.0.0` → attach the
-   exported `.mrpack` file → **Publish**.
-4. Friends: **⬇ Import pack → Friend's GitHub** → type `IzLuis/gang-pack` → **Import
-   latest release** → pick their optional mods → play.
+1. Build the pack on **Modrinth** (your preferred flow) *or* author it in the launcher
+   and export a `.mrpack` to a GitHub release (see [AUTHORING.md](AUTHORING.md)).
+2. Add it to `izlauncher.json` under `packs` with the server address.
+3. Commit. Open the launcher → Group tab → your pack is there.
 
-## Task 7 — Shipping updates (the loop you'll repeat)
+## Task 9 — The "new server day" routine ⭐
 
-1. Change your instance: add/remove mods (Mods tab), tweak configs by playing.
-2. **Export as .mrpack** with a bumped version (`1.1.0`).
-3. New GitHub release on the pack repo, tag `1.1.0`, attach the file.
-4. Friends open the instance → banner: **Pack update available 1.0.0 → 1.1.0** →
-   **Update now**. Their personal mods, saves, and choices survive; changed configs they
-   edited are backed up as `.bak-1.1.0`.
+1. Update the pack on Modrinth (new version) — or publish a new `.mrpack` release.
+2. Edit `izlauncher.json`: bump/add the pack entry, set the `server` address, and write
+   an announcement (Markdown: images, video, links — see GROUP-CONFIG.md).
+3. Commit, then post in Discord: *"El modpack ya está disponible en tu launcher."*
+4. Friends open IzLauncher → popup with your announcement → **Install/Update** → the
+   Play button reads **"Play & Join server"** and drops them straight in.
+
+To update the launcher itself: bump `"version"` in `package.json`, commit, tag
+(`git tag v0.2.1 && git push --tags`) — friends get the restart-to-update banner.
 
 ---
 
-### Optional extras
+### Notes
 
-- **Your own Microsoft Azure app for auth:** the launcher uses msmc's shared client ID,
-  which works out of the box. If you ever hit throttling, register an Azure app
-  (see msmc's README) — not needed for a friend group.
-- **Private pack repo:** GitHub release assets on private repos need auth tokens, which
-  this launcher doesn't manage. Keep the pack repo public (a random public repo of jar
-  configs is effectively invisible), or use a direct file URL you control instead.
-- **Icons/branding:** drop a `build/icon.png` (512×512) and electron-builder picks it up
-  at packaging time; rename the product in `package.json` → `build.productName`.
+- **Accounts policy:** Microsoft sign-in is required (pirated copies aren't supported).
+  Offline profiles unlock only after an owning account signs in — for LAN/no-internet.
+- **Changing a pack's server address later:** just edit the config — every friend's
+  launcher syncs it automatically. Never change a pack's `id`.
+- **Private config?** The config repo must be public (raw URLs need no auth). It
+  contains nothing sensitive — pack names and a server address.

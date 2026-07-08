@@ -40,12 +40,7 @@ body {
 }
 
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-block {
-  width: 38px; height: 38px; border-radius: 9px;
-  background: linear-gradient(135deg, #3fb950, #2f7d3b);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-}
+.brand-icon { width: 38px; height: 38px; image-rendering: pixelated; }
 .brand-name { font-weight: 700; }
 .brand-sub { color: var(--muted); font-size: 11px; }
 
@@ -63,12 +58,17 @@ body {
 }
 .avatar img { width: 100%; height: 100%; image-rendering: pixelated; }
 
-nav { display: flex; gap: 8px; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
 .nav-btn {
-  flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border);
-  background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+  flex: 1 1 45%; padding: 8px 6px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 12.5px;
+  position: relative; white-space: nowrap;
 }
 .nav-btn:hover, .nav-btn.active { color: var(--text); background: var(--bg3); }
+.nav-btn .dot-badge {
+  position: absolute; top: 5px; right: 7px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--red);
+}
 
 .sidebar-section {
   color: var(--muted); font-size: 11px; text-transform: uppercase;
@@ -270,3 +270,68 @@ section.settings-block {
   padding: 18px; margin-bottom: 16px; max-width: 640px;
 }
 section.settings-block h2 { margin-bottom: 14px; font-size: 15px; }
+
+/* ---------- IzLauncher additions ---------- */
+.btn.small { padding: 5px 10px; font-size: 12px; }
+.btn.discord {
+  background: #5865f2; border-color: #5865f2; color: #fff; font-weight: 600;
+}
+.btn.discord:hover { filter: brightness(1.12); }
+
+.launcher-update {
+  background: rgba(63, 185, 80, 0.12); border: 1px solid var(--green);
+  border-radius: 8px; padding: 9px 10px; font-size: 12px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+
+/* Group pack cards */
+.pack-row {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start;
+  max-width: 760px;
+}
+.pack-row .grow { flex: 1; min-width: 0; }
+.pack-row h3 { font-size: 15px; margin-bottom: 4px; }
+.pack-row .desc { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+.pack-row .meta-line { color: var(--muted); font-size: 12px; }
+.pack-row .star { color: var(--yellow); font-size: 12px; }
+.offline-note {
+  background: rgba(210, 153, 34, 0.12); border: 1px solid var(--yellow);
+  border-radius: 8px; padding: 9px 12px; margin: 12px 0; font-size: 13px; max-width: 760px;
+}
+
+/* Announcements */
+.ann-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; margin-bottom: 14px; max-width: 760px;
+}
+.ann-card.unseen { border-color: var(--accent); }
+.ann-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.ann-head h3 { font-size: 16px; flex: 1; }
+.ann-date { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.ann-pin { color: var(--yellow); font-size: 12px; }
+
+/* Rendered markdown */
+.md { line-height: 1.55; font-size: 13.5px; }
+.md h2 { font-size: 16px; margin: 12px 0 6px; }
+.md h3 { font-size: 14px; margin: 10px 0 5px; }
+.md h4 { font-size: 13px; margin: 8px 0 4px; color: var(--muted); }
+.md p { margin: 7px 0; }
+.md a { color: var(--accent); }
+.md img, .md video {
+  max-width: 100%; max-height: 340px; border-radius: 8px; display: block; margin: 10px 0;
+  border: 1px solid var(--border);
+}
+.md ul, .md ol { margin: 7px 0 7px 22px; }
+.md li { margin: 3px 0; }
+.md blockquote {
+  border-left: 3px solid var(--accent); padding: 4px 12px; margin: 8px 0;
+  color: var(--muted); background: var(--bg3); border-radius: 0 6px 6px 0;
+}
+.md pre {
+  background: #0a0c10; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; margin: 8px 0;
+}
+.md code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; background: var(--bg3); padding: 1px 5px; border-radius: 4px; }
+.md pre code { background: none; padding: 0; }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }

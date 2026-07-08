@@ -4,7 +4,7 @@
 
 | What | Where |
 | --- | --- |
-| Launcher data | Windows: `%APPDATA%/PersonalMCLauncher` · macOS: `~/Library/Application Support/PersonalMCLauncher` · Linux: `~/.local/share/PersonalMCLauncher` |
+| Launcher data | Windows: `%APPDATA%/IzLauncher` · macOS: `~/Library/Application Support/IzLauncher` · Linux: `~/.local/share/IzLauncher` (old `PersonalMCLauncher` folders migrate automatically) |
 | Instances (worlds, mods, configs) | `<data>/instances/<instance-id>/` |
 | Shared game files (versions/libraries/assets) | `<data>/minecraft/` |
 | Auto-installed Java runtimes | `<data>/runtimes/` |
@@ -54,6 +54,34 @@ hit it. It resets within the hour.
 **A config I edited got replaced by an update** — your version is right next to it as
 `<file>.bak-<version>`. Copy it back (or merge) and consider asking the pack author to
 stop shipping that particular file.
+
+## Group / announcements problems
+
+**Group tab is empty or missing** — the launcher couldn't fetch your `izlauncher.json`.
+Open the raw URL in a browser (Settings → Group shows which URL is in use); if GitHub
+shows a 404, check the repo is public and the file is on `main`. JSON syntax errors also
+break it — paste the file into a JSON validator.
+
+**Edited the config but friends don't see it** — raw.githubusercontent.com caches for up
+to ~5 minutes; the Refresh button in the Group tab bypasses the cache. Restarting the
+launcher also re-reads it.
+
+**Announcement didn't pop up** — each announcement `id` pops once per machine. New post =
+new unique `id`.
+
+**Images in announcements don't show** — the URL must be a direct `https://…` image link
+(ends in .png/.jpg/.gif). Discord attachment links and Imgur "direct links" work; page
+links don't.
+
+**"Play & Join server" missing** — the instance has no server address: set it in the
+group config (`packs[].server`) or per-instance in Instance settings → Server.
+
+## Launcher update problems
+
+**Friends don't get launcher updates** — updates come from GitHub Releases of the
+launcher repo: the repo must be public, the release must be created by the CI tag build
+(it uploads `latest.yml` alongside the installers), and the installed version must have
+been built from a tag. Dev runs (`npm start`) never self-update.
 
 ## Friend onboarding problems
 

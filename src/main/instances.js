@@ -27,8 +27,24 @@ export function defaultInstance() {
     packFiles: {},
     // Player choices for optional pack files (relative path -> boolean enabled).
     optionalChoices: {},
+    // Server to quick-join ({address, port} or null). Group packs get this from
+    // the group config; anyone can also set it per-instance.
+    server: null,
     settings: { memoryMax: '', memoryMin: '', javaPath: '', jvmArgs: '' },
   };
+}
+
+export async function setInstanceServer(id, address) {
+  const inst = await readInstance(id);
+  const clean = String(address || '').trim();
+  if (!clean) {
+    inst.server = null;
+  } else {
+    const [host, port] = clean.split(':');
+    inst.server = { address: host, port: port ? Number(port) || null : null };
+  }
+  await writeInstance(inst);
+  return inst.server;
 }
 
 export async function listInstances() {

@@ -13,6 +13,8 @@ import { beginImport, completeImport, checkForUpdate, beginUpdate, completeUpdat
 import { setOptionalEnabled } from './packs/install.js';
 import { searchModrinth } from './packs/modrinth.js';
 import { searchModsForInstance, installModrinthMod, setModOptionalFlag, exportInstanceAsMrpack } from './packs/authoring.js';
+import { getGroupConfig, groupInstallStates, refFromGroupPack } from './group.js';
+import { getAutoUpdater } from './updater.js';
 
 let settings;
 
@@ -43,7 +45,12 @@ export function registerIpc(getWindow) {
     });
 
   // App / settings
-  handle('app:info', () => ({ version: app.getVersion(), dataDir: dataDir(), platform: process.platform }));
+  handle('app:info', () => ({
+    version: app.getVersion(),
+    dataDir: dataDir(),
+    platform: process.platform,
+    locale: app.getLocale(),
+  }));
   handle('settings:get', () => s.data);
   handle('settings:set', (patch) => { s.patch(patch); return s.data; });
   handle('app:openPath', ({ target }) => {
@@ -54,6 +61,40 @@ export function registerIpc(getWindow) {
     const p = allowed[target];
     if (!p) throw new Error('Unknown path target');
     return shell.openPath(p);
+  });
+  handle('app:openExternal', ({ url }) => {
+    if (!/^https:\/\//.test(String(url))) throw new Error('Only https links can be opened.');
+    return shell.openExternal(url);
+  });
+  handle('app:installUpdate', async () => {
+    const updater = await getAutoUpdater();
+    updater.quitAndInstall();
+  });
+  handle('app:checkLauncherUpdate', async () => {
+    const updater = await getAutoUpdater();
+    const res = await updater.checkForUpdates();
+    return { current: app.getVersion(), latest: res?.updateInfo?.version || app.getVersion() };
+  });
+
+  // Group config (packs catalog, announcements, discord)
+  handle('group:get', async ({ force }) => {
+    const res = await getGroupConfig(s, { force });
+    const installs = await groupInstallStates(res.config);
+    return { ...res, installs };
+  });
+  handle('group:beginInstall', async ({ pack }) => {
+    const ref = refFromGroupPack(pack);
+    return beginImport(ref, s, (text) => emit({ type: 'status', instanceId: null, text }));
+  });
+  handle('group:markAnnouncementsSeen', ({ ids }) => {
+    const seen = new Set(s.get('seenAnnouncements', []));
+    for (const id of ids || []) seen.add(String(id));
+    s.set('seenAnnouncements', [...seen].slice(-500));
+    return s.get('seenAnnouncements');
+  });
+  handle('group:rememberPacks', ({ ids }) => {
+    s.set('knownGroupPacks', [...new Set(ids || [])].slice(-200));
+    return s.get('knownGroupPacks');
   });
 
   // Accounts
@@ -78,6 +119,7 @@ export function registerIpc(getWindow) {
   handle('instances:delete', ({ id }) => instances.deleteInstance(id));
   handle('instances:rename', ({ id, name }) => instances.renameInstance(id, name));
   handle('instances:patchSettings', ({ id, patch }) => instances.patchInstanceSettings(id, patch));
+  handle('instances:setServer', ({ id, address }) => instances.setInstanceServer(id, address));
   handle('instances:openFolder', ({ id }) => shell.openPath(instanceDir(id)));
 
   // Mods
@@ -111,8 +153,8 @@ export function registerIpc(getWindow) {
   });
   handle('packs:searchModrinth', ({ query }) => searchModrinth({ query, projectType: 'modpack' }));
   handle('packs:beginImport', ({ ref }) => beginImport(ref, s, (text) => emit({ type: 'status', instanceId: null, text })));
-  handle('packs:completeImport', async ({ ticket, name, choices }) => {
-    const result = await completeImport({ ticket, name, choices }, s, instanceEvents(null));
+  handle('packs:completeImport', async ({ ticket, name, choices, extra }) => {
+    const result = await completeImport({ ticket, name, choices, extra }, s, instanceEvents(null));
     emit({ type: 'instances-changed' });
     return result;
   });
@@ -134,6 +176,6 @@ export function registerIpc(getWindow) {
   });
 
   // Launch
-  handle('launch:play', ({ id }) => launchInstance(id, s, instanceEvents(id)));
+  handle('launch:play', ({ id, join }) => launchInstance(id, s, instanceEvents(id), { join: join !== false }));
   handle('launch:kill', ({ id }) => killInstance(id));
 }

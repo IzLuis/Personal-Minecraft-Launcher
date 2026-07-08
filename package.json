@@ -1,8 +1,8 @@
 {
-  "name": "personal-minecraft-launcher",
-  "productName": "Personal Minecraft Launcher",
-  "version": "0.1.0",
-  "description": "A Minecraft launcher for friend groups: modpacks from Modrinth/CurseForge, one-click updates, shared configs, optional mods.",
+  "name": "izlauncher",
+  "productName": "IzLauncher",
+  "version": "0.2.0",
+  "description": "IzLauncher — a Minecraft launcher for friend groups: modpacks from Modrinth/CurseForge, one-click updates, shared configs, optional mods, group announcements.",
   "author": "IzLuis",
   "license": "MIT",
   "type": "module",
@@ -30,17 +30,21 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.izluis.personal-minecraft-launcher",
-    "productName": "Personal Minecraft Launcher",
+    "appId": "com.izluis.izlauncher",
+    "productName": "IzLauncher",
+    "artifactName": "IzLauncher-${version}-${os}-${arch}.${ext}",
     "files": [
       "src/**/*",
       "package.json"
     ],
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "publish": {
-      "provider": "github"
+      "provider": "github",
+      "owner": "IzLuis",
+      "repo": "Personal-Minecraft-Launcher"
     },
     "win": {
       "target": [

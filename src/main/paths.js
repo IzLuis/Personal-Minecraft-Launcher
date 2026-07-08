@@ -9,21 +9,34 @@ export function setBaseDir(dir) {
   baseDir = dir;
 }
 
+function appDataRoot() {
+  return process.platform === 'win32'
+    ? process.env.APPDATA || path.join(process.env.USERPROFILE || '.', 'AppData', 'Roaming')
+    : process.platform === 'darwin'
+      ? path.join(process.env.HOME || '.', 'Library', 'Application Support')
+      : process.env.XDG_DATA_HOME || path.join(process.env.HOME || '.', '.local', 'share');
+}
+
 export function dataDir() {
   if (baseDir) return baseDir;
   if (process.env.PMCL_DATA_DIR) {
     baseDir = process.env.PMCL_DATA_DIR;
     return baseDir;
   }
-  // Lazy-required so pure-logic modules stay testable outside Electron.
-  const appData =
-    process.platform === 'win32'
-      ? process.env.APPDATA || path.join(process.env.USERPROFILE || '.', 'AppData', 'Roaming')
-      : process.platform === 'darwin'
-        ? path.join(process.env.HOME || '.', 'Library', 'Application Support')
-        : process.env.XDG_DATA_HOME || path.join(process.env.HOME || '.', '.local', 'share');
-  baseDir = path.join(appData, 'PersonalMCLauncher');
+  baseDir = path.join(appDataRoot(), 'IzLauncher');
   return baseDir;
+}
+
+/** One-time migration from the pre-rebrand data directory. Call before ensureBaseDirs. */
+export function migrateLegacyDataDir() {
+  if (process.env.PMCL_DATA_DIR) return;
+  const oldDir = path.join(appDataRoot(), 'PersonalMCLauncher');
+  const newDir = path.join(appDataRoot(), 'IzLauncher');
+  try {
+    if (fs.existsSync(oldDir) && !fs.existsSync(newDir)) fs.renameSync(oldDir, newDir);
+  } catch (err) {
+    console.warn('Data dir migration failed (continuing with fresh dir):', err.message);
+  }
 }
 
 export const minecraftRoot = () => path.join(dataDir(), 'minecraft'); // shared versions/libraries/assets

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensureBaseDirs } from './paths.js';
+import { ensureBaseDirs, migrateLegacyDataDir } from './paths.js';
 import { registerIpc } from './ipc.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,6 +17,8 @@ if (!app.requestSingleInstanceLock()) {
       height: 760,
       minWidth: 940,
       minHeight: 620,
+      title: 'IzLauncher',
+      icon: path.join(__dirname, '..', 'renderer', 'icon.png'),
       backgroundColor: '#0f1115',
       autoHideMenuBar: true,
       webPreferences: {
@@ -44,28 +46,33 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
+    migrateLegacyDataDir();
     ensureBaseDirs();
     registerIpc(() => mainWindow);
     createWindow();
-
-    // Launcher self-update from GitHub Releases (no-op in dev / unpublished builds).
-    try {
-      const { default: pkg } = await import('electron-updater');
-      const { autoUpdater } = pkg;
-      autoUpdater.autoDownload = true;
-      autoUpdater.autoInstallOnAppQuit = true;
-      autoUpdater.on('update-downloaded', (info) => {
-        mainWindow?.webContents.send('pmcl:event', { type: 'launcher-update-ready', version: info.version });
-      });
-      await autoUpdater.checkForUpdates().catch(() => {});
-    } catch { /* updater unavailable in dev */ }
+    setupAutoUpdater();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
   });
 
-  app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
-  });
+  // Launcher self-update from GitHub Releases (friends never touch a terminal:
+  // the update downloads in the background and a "Restart to update" banner
+  // appears in the UI). No-op in dev / unpublished builds.
+  async function setupAutoUpdater() {
+    try {
+      const { getAutoUpdater } = await import('./updater.js');
+      const autoUpdater = await getAutoUpdater();
+      autoUpdater.autoDownload = true;
+      autoUpdater.autoInstallOnAppQuit = true;
+      const send = (payload) => mainWindow?.webContents.send('pmcl:event', payload);
+      autoUpdater.on('update-available', (info) => send({ type: 'launcher-update-available', version: info.version }));
+      autoUpdater.on('update-downloaded', (info) => send({ type: 'launcher-update-ready', version: info.version }));
+      autoUpdater.on('error', () => {}); // dev mode / offline — silent
+      const check = () => autoUpdater.checkForUpdates().catch(() => {});
+      check();
+      setInterval(check, 6 * 60 * 60 * 1000); // every 6 hours while the launcher stays open
+    } catch { /* updater unavailable in dev */ }
+  }
 }

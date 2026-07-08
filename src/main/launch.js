@@ -1,7 +1,7 @@
 // Launching: assemble MCLC options from an instance, with a shared minecraft root
 // (versions/libraries/assets downloaded once) and per-instance game directories.
-import path from 'node:path';
 import { createRequire } from 'node:module';
+import { compareVersions } from './util.js';
 import { minecraftRoot, instanceDir } from './paths.js';
 import { readInstance, touchLastPlayed } from './instances.js';
 import { ensureLoader } from './loaders.js';
@@ -45,6 +45,18 @@ export function resolveMemory(rawMax, rawMin, defMax = '4G', defMin = '1G') {
   return { max, min };
 }
 
+/**
+ * Build the MCLC quickPlay option for joining a server, or null.
+ * 1.20+ supports Quick Play natively; older versions use the legacy
+ * --server/--port flags (both handled by MCLC).
+ */
+export function quickPlayFor(mcVersion, server) {
+  if (!server?.address) return null;
+  const identifier = server.port ? `${server.address}:${server.port}` : server.address;
+  const modern = compareVersions(mcVersion, '1.20') >= 0;
+  return { type: modern ? 'multiplayer' : 'legacy', identifier };
+}
+
 export function isRunning(id) {
   return running.has(id);
 }
@@ -61,7 +73,7 @@ export function killInstance(id) {
  * Launch an instance. `events` receives lifecycle callbacks:
  *   onStatus(text), onProgress({label, value, max}), onLog(line), onExit(code)
  */
-export async function launchInstance(id, settingsStore, events = {}) {
+export async function launchInstance(id, settingsStore, events = {}, { join = true } = {}) {
   const { onStatus = () => {}, onProgress = () => {}, onLog = () => {}, onExit = () => {} } = events;
   if (running.has(id)) throw new Error('This instance is already running.');
   const inst = await readInstance(id);
@@ -104,6 +116,12 @@ export async function launchInstance(id, settingsStore, events = {}) {
     },
     ...(jvmArgs ? { customArgs: jvmArgs.split(/\s+/) } : {}),
   };
+
+  const quickPlay = join ? quickPlayFor(inst.mc.version, inst.server) : null;
+  if (quickPlay) {
+    opts.quickPlay = quickPlay;
+    onLog(`[launcher] Joining server ${quickPlay.identifier} on launch`);
+  }
 
   onStatus('Downloading game files…');
   const launcher = new Client();

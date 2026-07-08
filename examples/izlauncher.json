@@ -1,0 +1,26 @@
+{
+  "configVersion": 1,
+  "groupName": "Los Compas",
+  "discordUrl": "https://discord.gg/your-invite-code",
+
+  "packs": [
+    {
+      "id": "season3",
+      "name": "Compas Season 3",
+      "description": "Fabric 1.21.1 — magia, tecnología y dungeons.",
+      "source": { "type": "modrinth", "project": "your-modrinth-pack-slug" },
+      "server": { "address": "mc.tuservidor.mx", "port": 25565 },
+      "recommended": true
+    }
+  ],
+
+  "announcements": [
+    {
+      "id": "2026-07-08-bienvenida",
+      "date": "2026-07-08",
+      "title": "¡Bienvenidos a IzLauncher! 🎉",
+      "pinned": true,
+      "body": "# Ya estamos en el launcher\n\nDesde hoy los modpacks del grupo **se instalan solos**: pestaña *Grupo* → Instalar → Jugar.\n\n- El botón *Jugar* te mete directo al server\n- Las actualizaciones del pack salen aquí con un clic\n- Cuando haya server nuevo, te aparece un anuncio como este\n\n> Cualquier duda, al Discord 👇"
+    }
+  ]
+}

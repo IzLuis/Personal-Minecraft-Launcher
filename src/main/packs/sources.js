@@ -103,8 +103,11 @@ export async function beginImport(ref, settings, onStatus) {
   };
 }
 
-/** Phase 2: create the instance and install the archive with the user's optional choices. */
-export async function completeImport({ ticket, name, choices = {} }, settings, events = {}) {
+/**
+ * Phase 2: create the instance and install the archive with the user's optional choices.
+ * `extra` can attach group metadata: { server: {address,port}, groupPackId }.
+ */
+export async function completeImport({ ticket, name, choices = {}, extra = {} }, settings, events = {}) {
   const inst = defaultInstance();
   inst.id = await allocateInstanceId(name || 'modpack');
   inst.name = (name || '').trim() || 'Modpack';
@@ -118,10 +121,10 @@ export async function completeImport({ ticket, name, choices = {} }, settings, e
       ...events,
     });
     const updated = await readInstance(inst.id);
-    if (ticket.versionLabel) {
-      updated.packVersion = ticket.versionLabel;
-      await writeInstance(updated);
-    }
+    if (ticket.versionLabel) updated.packVersion = ticket.versionLabel;
+    if (extra.server) updated.server = extra.server;
+    if (extra.groupPackId) updated.source = { ...updated.source, groupPackId: extra.groupPackId };
+    await writeInstance(updated);
     return { instanceId: inst.id, summary, meta };
   } catch (err) {
     // Leave nothing half-imported.
