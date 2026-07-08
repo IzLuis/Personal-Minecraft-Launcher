@@ -401,7 +401,7 @@ function renderInstanceSettings(body) {
       <h2>General</h2>
       <div class="field"><label>Instance name</label><input type="text" id="is-name" value="${esc(inst.name)}"/></div>
       <div class="field-row">
-        <div class="field"><label>Max RAM (blank = global default)</label><input type="text" id="is-memmax" placeholder="e.g. 6G" value="${esc(s.memoryMax || '')}"/></div>
+        <div class="field"><label>Max RAM in GB (blank = global default)</label><input type="text" id="is-memmax" placeholder="e.g. 8 or 8G" value="${esc(s.memoryMax || '')}"/></div>
         <div class="field"><label>Min RAM</label><input type="text" id="is-memmin" placeholder="e.g. 1G" value="${esc(s.memoryMin || '')}"/></div>
       </div>
       <div class="field"><label>Java path override</label><input type="text" id="is-java" placeholder="blank = auto-managed Java" value="${esc(s.javaPath || '')}"/></div>
@@ -470,7 +470,7 @@ function renderGlobalSettings(main) {
     <section class="settings-block mt">
       <h2>Defaults</h2>
       <div class="field-row">
-        <div class="field"><label>Max RAM</label><input type="text" id="gs-memmax" value="${esc(s.memoryMax)}"/></div>
+        <div class="field"><label>Max RAM (e.g. 8 or 8G)</label><input type="text" id="gs-memmax" value="${esc(s.memoryMax)}"/></div>
         <div class="field"><label>Min RAM</label><input type="text" id="gs-memmin" value="${esc(s.memoryMin)}"/></div>
       </div>
       <div class="field"><label>Download concurrency</label><input type="text" id="gs-conc" value="${esc(s.downloadConcurrency)}"/></div>

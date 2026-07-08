@@ -36,6 +36,23 @@ test('offlineUuid is deterministic, versioned, and variant-correct', () => {
   assert.match(a, /^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 });
 
+test('memory normalization: plain numbers mean GB, min clamps to max', async () => {
+  const { normalizeMemory, resolveMemory } = await import('../src/main/launch.js');
+  assert.equal(normalizeMemory('24', '4G'), '24G');      // the "-Xmx24" bug
+  assert.equal(normalizeMemory('8G', '4G'), '8G');
+  assert.equal(normalizeMemory('8192M', '4G'), '8192M');
+  assert.equal(normalizeMemory('2048', '4G'), '2048M');  // large numbers are MB
+  assert.equal(normalizeMemory('1.5G', '4G'), '1536M');
+  assert.equal(normalizeMemory('  6 g ', '4G'), '6G');
+  assert.equal(normalizeMemory('', '4G'), '4G');
+  assert.equal(normalizeMemory('potato', '4G'), '4G');
+  assert.equal(normalizeMemory('0', '4G'), '4G');
+
+  assert.deepEqual(resolveMemory('24', '1G'), { max: '24G', min: '1G' });
+  assert.deepEqual(resolveMemory('2G', '4G'), { max: '2G', min: '2G' }); // min clamped
+  assert.deepEqual(resolveMemory('', ''), { max: '4G', min: '1G' });
+});
+
 test('neoforge prefix mapping', () => {
   assert.equal(neoforgePrefixFor('1.21.1'), '21.1');
   assert.equal(neoforgePrefixFor('1.21'), '21.0');

@@ -23,8 +23,9 @@ in again. Microsoft refresh tokens expire after long inactivity.
 (Fabric jar in a Forge instance), missing dependency (the log names it), or wrong
 Minecraft version.
 
-**Out-of-memory / world stutter** — raise Max RAM (Instance settings, e.g. `6G`). Don't
-allocate more than ~half your physical RAM.
+**Out-of-memory / world stutter** — raise Max RAM (Instance settings). Accepted formats:
+`8`, `8G`, `8192M` (a plain number means gigabytes). Don't allocate more than ~half your
+physical RAM.
 
 **Forge/NeoForge instance won't start but Fabric works** — modern Forge launches through
 ForgeWrapper on first run, which needs a minute to run installers. Check Logs; if it

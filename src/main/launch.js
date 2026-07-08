@@ -14,6 +14,37 @@ const { Client } = require('minecraft-launcher-core');
 
 const running = new Map(); // instanceId -> child process
 
+/**
+ * Normalize a user-entered memory value to something the JVM accepts.
+ * "8G" -> "8G", "8192M" -> "8192M", plain "8" -> "8G" (people think in GB),
+ * plain "2048" -> "2048M" (numbers above 128 are clearly megabytes),
+ * "1.5G" -> "1536M". Invalid/empty input falls back.
+ */
+export function normalizeMemory(value, fallback) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return fallback;
+  const m = raw.match(/^(\d+(?:\.\d+)?)\s*([gGmM])?[bB]?$/);
+  if (!m) return fallback;
+  let num = parseFloat(m[1]);
+  if (!(num > 0)) return fallback;
+  let unit = (m[2] || '').toUpperCase();
+  if (!unit) unit = num <= 128 ? 'G' : 'M';
+  if (!Number.isInteger(num)) {
+    num = Math.round(unit === 'G' ? num * 1024 : num);
+    unit = 'M';
+  }
+  return `${num}${unit}`;
+}
+
+/** Resolve max/min memory with normalization and a min<=max clamp. */
+export function resolveMemory(rawMax, rawMin, defMax = '4G', defMin = '1G') {
+  const toMb = (s) => parseInt(s, 10) * (s.endsWith('G') ? 1024 : 1);
+  const max = normalizeMemory(rawMax, defMax);
+  let min = normalizeMemory(rawMin, defMin);
+  if (toMb(min) > toMb(max)) min = max;
+  return { max, min };
+}
+
 export function isRunning(id) {
   return running.has(id);
 }
@@ -48,8 +79,12 @@ export async function launchInstance(id, settingsStore, events = {}) {
     { onStatus }
   );
 
-  const memoryMax = inst.settings.memoryMax || settingsStore.get('memoryMax', '4G');
-  const memoryMin = inst.settings.memoryMin || settingsStore.get('memoryMin', '1G');
+  const rawMax = inst.settings.memoryMax || settingsStore.get('memoryMax', '4G');
+  const rawMin = inst.settings.memoryMin || settingsStore.get('memoryMin', '1G');
+  const { max: memoryMax, min: memoryMin } = resolveMemory(rawMax, rawMin);
+  if (memoryMax !== String(rawMax).trim() || memoryMin !== String(rawMin).trim()) {
+    onLog(`[launcher] Using RAM ${memoryMin}–${memoryMax} (interpreted from "${rawMin}"/"${rawMax}")`);
+  }
   const jvmArgs = (inst.settings.jvmArgs || settingsStore.get('jvmArgs', '')).trim();
 
   const opts = {
