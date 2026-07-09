@@ -3,51 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src https: data: 'self'; media-src https:; connect-src 'none'; font-src 'self'" />
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src https: data: 'self'; media-src https:; connect-src 'none'; font-src 'self' https://fonts.gstatic.com" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IzLauncher</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="glow-layer">
+    <div class="blob-gold"></div>
+    <div class="blob-purple"></div>
+  </div>
+
   <div id="app">
     <aside id="sidebar">
       <div class="brand">
-        <img class="brand-icon" src="icon.png" alt="" />
+        <div class="brand-badge"><img src="icon.png" alt="" /></div>
         <div>
           <div class="brand-name">IzLauncher</div>
           <div class="brand-sub" id="brand-version"></div>
         </div>
       </div>
 
-      <button id="account-chip" class="account-chip" title="Accounts">
-        <span class="avatar" id="account-avatar"></span>
-        <span id="account-name"></span>
-      </button>
-
       <nav id="nav"></nav>
 
-      <div class="sidebar-section" id="instances-label"></div>
+      <div class="sidebar-actions">
+        <button id="btn-new" class="btn-new"></button>
+        <button id="btn-import" class="btn-import-side"></button>
+      </div>
+
+      <div class="quick-head">
+        <span id="instances-label"></span>
+        <span id="instances-count"></span>
+      </div>
       <div id="instance-list" class="instance-list"></div>
 
-      <div class="sidebar-actions">
-        <button id="btn-new" class="btn"></button>
-        <button id="btn-import" class="btn primary"></button>
-      </div>
+      <div id="launcher-update" class="hidden"></div>
+      <button id="btn-discord" class="btn-discord hidden"></button>
+      <button id="account-chip" class="account-chip">
+        <span class="avatar" id="account-avatar"></span>
+        <span class="grow">
+          <span class="acc-name" id="account-name"></span>
+          <span class="acc-status none" id="account-status"></span>
+        </span>
+        <span class="muted">⇅</span>
+      </button>
 
-      <button id="btn-discord" class="btn discord hidden"></button>
-
-      <div id="launcher-update" class="launcher-update hidden">
-        <div id="lu-text"></div>
-        <button id="lu-restart" class="btn primary small hidden"></button>
-      </div>
-
-      <div id="global-progress" class="global-progress hidden">
-        <div class="gp-label" id="gp-label"></div>
-        <div class="gp-bar"><div class="gp-fill" id="gp-fill"></div></div>
+      <div class="bg-progress">
+        <div class="inner hidden" id="global-progress">
+          <div class="row">
+            <span class="spin">◌</span>
+            <span class="label" id="gp-label"></span>
+            <span class="pct" id="gp-pct"></span>
+          </div>
+          <div class="bar"><div class="fill" id="gp-fill"></div></div>
+        </div>
+        <div class="idle" id="gp-idle"></div>
       </div>
     </aside>
 
-    <main id="main"></main>
+    <div id="main-col">
+      <div class="topbar">
+        <div class="screen-title" id="screen-title"></div>
+        <span id="chip-offline" class="chip-offline hidden"></span>
+        <div class="lang-seg" id="lang-seg">
+          <button data-lang="en">EN</button>
+          <button data-lang="es">ES</button>
+        </div>
+        <button class="bell-btn" id="bell-btn" title="News">🔔<span class="dot hidden" id="bell-dot"></span></button>
+      </div>
+      <main id="main"></main>
+    </div>
   </div>
 
   <div id="modal-root"></div>

@@ -5,9 +5,32 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const t = (key, params) => I18N.t(key, params);
 
+const ICONS = {
+  group: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.2A3.2 3.2 0 0 1 16 11"/><path d="M18 14.2A6 6 0 0 1 21 20"/></svg>',
+  library: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  news: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 14-6v14L3 13z"/><path d="M17 8a3 3 0 0 1 0 8"/><path d="M6 13v4a2 2 0 0 0 2 2h1"/></svg>',
+  settings: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="15" cy="8" r="2.4"/><circle cx="7" cy="16" r="2.4"/></svg>',
+  plus: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  download: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>',
+  upload: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>',
+  refresh: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+  play: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>',
+  stop: '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  back: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg>',
+  trash: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>',
+  search: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>',
+  check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  folder: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  lock: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  discord: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.3 5.4A17 17 0 0 0 15 4l-.3.5a12 12 0 0 1 3.7 1.9 15.6 15.6 0 0 0-12.8 0A12 12 0 0 1 9.4 4.5L9 4a17 17 0 0 0-4.3 1.4C2 9.3 1.4 13.1 1.7 16.8A17 17 0 0 0 6.9 19l.6-.9c-.9-.3-1.7-.7-2.4-1.2l.6-.4a12 12 0 0 0 10.6 0l.6.4c-.7.5-1.5.9-2.4 1.2l.6.9a17 17 0 0 0 5.2-2.2c.4-4.3-.6-8-3.6-11.4ZM8.5 14.5c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm7 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg>',
+  spin: '<svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-3-6.7"/></svg>',
+  warn: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.3 3.9-8 13.9A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.2l-8-13.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  star: '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 7 7 .5-5.5 4.5 2 7L12 18l-6.5 3 2-7L2 9.5 9 9z"/></svg>',
+};
+
 const state = {
-  view: 'library',            // group | library | instance | news | settings
-  tab: 'mods',                // instance tab: mods | settings | logs
+  view: 'library',            // group | library | instance | news | newsDetail | settings
+  tab: 'mods',
   appInfo: {},
   settings: {},
   accounts: { list: [], activeId: null },
@@ -18,15 +41,71 @@ const state = {
   update: null,
   logs: {},
   checkingUpdate: false,
-  group: null,                // { config, fromCache, installs, error }
+  group: null,
+  newsId: null,
+  pings: {},                  // "host:port" -> { at, res }
 };
+
+/* ---------------- Small helpers ---------------- */
+
+function artGradient(name) {
+  let h = 0;
+  for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) % 360;
+  const h2 = (h + 40) % 360;
+  return `linear-gradient(135deg, hsl(${h},52%,46%), hsl(${h2},60%,32%))`;
+}
+
+function tagPillClass(tag) {
+  let h = 0;
+  for (const c of String(tag)) h = (h * 7 + c.charCodeAt(0)) % 3;
+  return ['gold', 'purple', 'green'][h];
+}
+
+function excerptOf(md, max = 150) {
+  const text = String(md || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[#>*`_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+function serverString(server) {
+  if (!server?.address) return null;
+  return server.port && server.port !== 25565 ? `${server.address}:${server.port}` : server.address;
+}
+
+function loaderLabel(inst) {
+  if (!inst.loader || inst.loader.type === 'vanilla') return 'Vanilla';
+  return `${inst.loader.type[0].toUpperCase()}${inst.loader.type.slice(1)} ${inst.loader.version || ''}`.trim();
+}
+
+function sourceLabel(source) {
+  switch (source?.type) {
+    case 'modrinth': return 'Modrinth';
+    case 'curseforge': return 'CurseForge';
+    case 'github-releases': return `GitHub ${source.owner}/${source.repo}`;
+    case 'mrpack-url': return 'URL';
+    default: return null;
+  }
+}
+
+function fmtDownloads(n) {
+  if (!n) return '';
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)}k`;
+  return String(n);
+}
 
 /* ---------------- Toasts & modals ---------------- */
 
-function toast(message, kind = 'info', ms = 5000) {
+function toast(message, kind = 'info', ms = 5500) {
   const el = document.createElement('div');
   el.className = `toast ${kind}`;
-  el.textContent = message;
+  el.innerHTML = `<span class="t-dot"></span><span class="t-msg">${esc(message)}</span><button class="t-close">✕</button>`;
+  $('.t-close', el).addEventListener('click', () => el.remove());
   $('#toast-root').appendChild(el);
   setTimeout(() => el.remove(), ms);
 }
@@ -34,7 +113,7 @@ function toast(message, kind = 'info', ms = 5000) {
 function modal(html, opts = {}) {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
-  backdrop.innerHTML = `<div class="modal" ${opts.wide ? 'style="width:680px"' : ''}>${html}</div>`;
+  backdrop.innerHTML = `<div class="modal ${opts.cls || ''}">${html}</div>`;
   const close = () => backdrop.remove();
   backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(); });
   $$('[data-close]', backdrop).forEach((b) => b.addEventListener('click', close));
@@ -42,22 +121,40 @@ function modal(html, opts = {}) {
   return { el: backdrop, close };
 }
 
+function modalShell(title, bodyHtml, opts = {}) {
+  return modal(`
+    <div class="modal-head"><h2>${title}</h2><button class="modal-close" data-close>✕</button></div>
+    <div class="modal-body">${bodyHtml}</div>`, opts);
+}
+
 function confirmModal(title, body, confirmLabel) {
   return new Promise((resolve) => {
     const m = modal(`
-      <h2>${esc(title)}</h2>
-      <p class="muted">${esc(body)}</p>
-      <div class="modal-actions">
-        <button class="btn" data-close>${t('common.cancel')}</button>
-        <button class="btn danger" id="cf-yes">${esc(confirmLabel || t('common.delete'))}</button>
-      </div>`);
+      <div class="modal-body" style="text-align:center;padding:26px 24px">
+        <div class="m-icon" style="width:52px;height:52px;margin:0 auto 16px;border-radius:14px;background:rgba(240,97,109,.12);display:flex;align-items:center;justify-content:center;color:var(--red)">${ICONS.warn}</div>
+        <h2 style="font:800 18px var(--font-disp)">${esc(title)}</h2>
+        <p style="color:var(--muted);margin:9px auto 22px;line-height:1.5;font-size:13.5px">${esc(body)}</p>
+        <div style="display:flex;gap:10px">
+          <button class="btn grow-btn" style="flex:1;height:46px" data-close>${t('common.cancel')}</button>
+          <button class="btn grow-btn" id="cf-yes" style="flex:1;height:46px;border:none;background:var(--red);color:#2a0608;font-weight:800">${esc(confirmLabel || t('common.delete'))}</button>
+        </div>
+      </div>`, { cls: 'narrow' });
     $('#cf-yes', m.el).addEventListener('click', () => { m.close(); resolve(true); });
     m.el.addEventListener('mousedown', (e) => { if (e.target === m.el) resolve(false); });
     $$('[data-close]', m.el).forEach((b) => b.addEventListener('click', () => resolve(false)));
   });
 }
 
-/* External links (markdown, discord, etc.) always open in the system browser. */
+function waitingModal(title, sub) {
+  return modal(`
+    <div class="modal-body" style="text-align:center;padding:34px 26px">
+      <span class="spin-big" style="animation:spin 1.1s linear infinite;color:var(--gold);font-size:30px;display:inline-block">◌</span>
+      <div style="font:800 17px var(--font-disp);margin-top:16px">${esc(title)}</div>
+      <div style="color:var(--muted);margin-top:7px;line-height:1.5;font-size:13px">${esc(sub)}</div>
+    </div>`, { cls: 'narrow' });
+}
+
+/* External links open in the system browser. */
 document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href^="https://"]');
   if (a) {
@@ -70,13 +167,17 @@ document.addEventListener('click', (e) => {
 
 let progressHideTimer = null;
 function showProgress(label, value, max) {
-  const box = $('#global-progress');
-  box.classList.remove('hidden');
+  $('#global-progress').classList.remove('hidden');
+  $('#gp-idle').classList.add('hidden');
   $('#gp-label').textContent = I18N.translateStatus(label);
   const pct = max ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  $('#gp-fill').style.width = `${pct}%`;
+  $('#gp-pct').textContent = max ? `${pct}%` : '';
+  $('#gp-fill').style.width = max ? `${pct}%` : '30%';
   clearTimeout(progressHideTimer);
-  progressHideTimer = setTimeout(() => box.classList.add('hidden'), 4000);
+  progressHideTimer = setTimeout(() => {
+    $('#global-progress').classList.add('hidden');
+    $('#gp-idle').classList.remove('hidden');
+  }, 4000);
 }
 
 window.pmcl.onEvent((evt) => {
@@ -110,27 +211,34 @@ window.pmcl.onEvent((evt) => {
       refreshInstances();
       break;
     case 'launcher-update-available':
-      showLauncherUpdate('downloading', evt.version);
+      renderLauncherUpdate('downloading', evt.version);
       break;
     case 'launcher-update-ready':
-      showLauncherUpdate('ready', evt.version);
+      renderLauncherUpdate('ready', evt.version);
       break;
     default:
       break;
   }
 });
 
-function showLauncherUpdate(phase, version) {
+function renderLauncherUpdate(phase, version) {
   const box = $('#launcher-update');
   box.classList.remove('hidden');
   if (phase === 'downloading') {
-    $('#lu-text').textContent = t('update.downloading', { v: version });
-    $('#lu-restart').classList.add('hidden');
+    box.innerHTML = `
+      <div class="launcher-update-dl">
+        <div class="row"><span class="spin">◌</span><span style="flex:1">${t('update.downloading', { v: esc(version) })}</span></div>
+        <div class="bar"><div class="fill" style="width:40%"></div></div>
+      </div>`;
   } else {
-    $('#lu-text').textContent = t('update.ready', { v: version });
-    const btn = $('#lu-restart');
-    btn.textContent = t('update.restart');
-    btn.classList.remove('hidden');
+    box.innerHTML = `
+      <div class="launcher-update-ready">
+        <div style="flex:1;min-width:0">
+          <div class="lu-title">${t('update.ready', { v: esc(version) })}</div>
+        </div>
+        <button class="lu-btn" id="lu-restart">${t('update.restart')}</button>
+      </div>`;
+    $('#lu-restart').addEventListener('click', () => api('app:installUpdate').catch((e) => toast(e.message, 'error')));
   }
 }
 
@@ -155,7 +263,7 @@ async function refreshInstances() {
 }
 
 let lastGroupSnapshot = null;
-const popupShownIds = new Set(); // popped this session (persisted "seen" happens on Got it)
+const popupShownIds = new Set();
 
 async function refreshGroup({ force = false, announce = false } = {}) {
   try {
@@ -170,7 +278,6 @@ async function refreshGroup({ force = false, announce = false } = {}) {
   lastGroupSnapshot = snapshot;
 
   if (cfg && announce) {
-    // "New pack!" toasts
     const known = new Set(state.settings.knownGroupPacks || []);
     const fresh = cfg.packs.filter((p) => !known.has(p.id));
     if (known.size && fresh.length) {
@@ -180,8 +287,6 @@ async function refreshGroup({ force = false, announce = false } = {}) {
       state.settings.knownGroupPacks = cfg.packs.map((p) => p.id);
       api('group:rememberPacks', { ids: state.settings.knownGroupPacks }).catch(() => {});
     }
-    // Announcement popup for unseen items (skip while another modal is open —
-    // they'll pop on the next poll instead of interrupting an install).
     const seen = new Set(state.settings.seenAnnouncements || []);
     const unseen = cfg.announcements.filter((a) => !seen.has(a.id) && !popupShownIds.has(a.id));
     if (unseen.length && !$('#modal-root').children.length) {
@@ -189,12 +294,10 @@ async function refreshGroup({ force = false, announce = false } = {}) {
       announcementPopup(unseen);
     }
   }
-
-  // Re-render only what's safe: the sidebar always (badges), the main area only
-  // on group-ish views — never wipe a form the user is typing into.
   if (changed || firstLoad) {
     renderSidebar();
-    if (['group', 'news', 'library'].includes(state.view)) render();
+    renderTopbar();
+    if (['group', 'news', 'newsDetail', 'library'].includes(state.view)) render();
   }
 }
 
@@ -214,6 +317,14 @@ function unseenAnnouncements() {
   if (!cfg) return [];
   const seen = new Set(state.settings.seenAnnouncements || []);
   return cfg.announcements.filter((a) => !seen.has(a.id));
+}
+
+function markSeen(ids) {
+  return api('group:markAnnouncementsSeen', { ids }).then((seen) => {
+    state.settings.seenAnnouncements = seen;
+    renderSidebar();
+    renderTopbar();
+  }).catch(() => {});
 }
 
 async function openInstance(id, tab = 'mods') {
@@ -241,59 +352,89 @@ async function autoCheckUpdate() {
   renderUpdateBanner();
 }
 
-/* ---------------- Rendering ---------------- */
+/* ---------------- Server pings ---------------- */
 
-function packColor(name) {
-  let h = 0;
-  for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return `hsl(${h}, 45%, 42%)`;
-}
-
-function packIcon(name, cls = 'pack-icon') {
-  const letter = (String(name).trim()[0] || '?').toUpperCase();
-  return `<div class="${cls}" style="background:${packColor(name)}">${esc(letter)}</div>`;
-}
-
-function loaderLabel(inst) {
-  if (!inst.loader || inst.loader.type === 'vanilla') return 'Vanilla';
-  return `${inst.loader.type[0].toUpperCase()}${inst.loader.type.slice(1)} ${inst.loader.version || ''}`.trim();
-}
-
-function sourceLabel(source) {
-  switch (source?.type) {
-    case 'modrinth': return 'Modrinth';
-    case 'curseforge': return 'CurseForge';
-    case 'github-releases': return `GitHub ${source.owner}/${source.repo}`;
-    case 'mrpack-url': return 'URL';
-    default: return null;
+async function pingAndRender(server) {
+  const key = serverString(server);
+  if (!key) return;
+  const cached = state.pings[key];
+  if (cached && Date.now() - cached.at < 60_000) return updatePingSlots(key, cached.res);
+  try {
+    const res = await api('server:ping', { address: server.address, port: server.port || 25565 });
+    state.pings[key] = { at: Date.now(), res };
+    updatePingSlots(key, res);
+  } catch {
+    state.pings[key] = { at: Date.now(), res: { online: false } };
+    updatePingSlots(key, { online: false });
   }
 }
 
-function serverString(server) {
-  if (!server?.address) return null;
-  return server.port ? `${server.address}:${server.port}` : server.address;
+function updatePingSlots(key, res) {
+  $$(`[data-ping-slot="${CSS.escape(key)}"]`).forEach((el) => {
+    if (res.online) {
+      el.className = 'status online';
+      el.innerHTML = `<span class="s-dot"></span>${t('group.srvOnline')} · ${res.playersOnline}/${res.playersMax} · ${res.latencyMs}ms`;
+    } else {
+      el.className = 'status offline';
+      el.innerHTML = `<span class="s-dot"></span>${t('group.srvOffline')}`;
+    }
+  });
 }
+
+/* ---------------- Rendering: chrome ---------------- */
 
 function renderAccountChip() {
   const active = state.accounts.list.find((a) => a.id === state.accounts.activeId);
   $('#account-name').textContent = active ? active.name : t('account.none');
+  const status = $('#account-status');
+  if (active) {
+    status.textContent = `● ${active.type === 'msa' ? t('account.status.ms') : t('account.status.offline')}`;
+    status.classList.remove('none');
+  } else {
+    status.textContent = `● ${t('account.status.none')}`;
+    status.classList.add('none');
+  }
   $('#account-avatar').innerHTML = active
-    ? `<img src="https://mc-heads.net/avatar/${encodeURIComponent(active.type === 'msa' ? active.id : active.name)}/26" alt="" />`
-    : '';
+    ? `<img src="https://mc-heads.net/avatar/${encodeURIComponent(active.type === 'msa' ? active.id : active.name)}/68" alt="" />`
+    : '?';
+}
+
+function screenTitle() {
+  switch (state.view) {
+    case 'group': return state.group?.config?.groupName || t('nav.group');
+    case 'news': case 'newsDetail': return t('news.title');
+    case 'settings': return t('settings.title');
+    case 'instance': return state.current?.name || t('nav.library');
+    default: return t('library.title');
+  }
+}
+
+function renderTopbar() {
+  $('#screen-title').textContent = screenTitle();
+  const off = $('#chip-offline');
+  if (state.group?.fromCache) {
+    off.classList.remove('hidden');
+    off.textContent = `⚠ ${t('topbar.offline')}`;
+  } else {
+    off.classList.add('hidden');
+  }
+  $$('#lang-seg button').forEach((b) => b.classList.toggle('active', b.dataset.lang === I18N.getLang()));
+  $('#bell-dot').classList.toggle('hidden', unseenAnnouncements().length === 0);
 }
 
 function renderSidebar() {
   const hasGroup = !!state.group?.config;
   const unseen = unseenAnnouncements().length;
   const navItems = [
-    ...(hasGroup ? [['group', `🌐 ${t('nav.group')}`]] : []),
-    ['library', `📦 ${t('nav.library')}`],
-    ...(hasGroup ? [['news', `📣 ${t('nav.news')}`]] : []),
-    ['settings', `⚙ ${t('nav.settings')}`],
+    ...(hasGroup ? [['group', ICONS.group, t('nav.group')]] : []),
+    ['library', ICONS.library, t('nav.library')],
+    ...(hasGroup ? [['news', ICONS.news, t('nav.news')]] : []),
+    ['settings', ICONS.settings, t('nav.settings')],
   ];
-  $('#nav').innerHTML = navItems.map(([key, label]) => `
-    <button class="nav-btn ${state.view === key || (state.view === 'instance' && key === 'library') ? 'active' : ''}" data-nav="${key}">
-      ${label}${key === 'news' && unseen ? '<span class="dot-badge"></span>' : ''}
+  const activeNav = state.view === 'instance' ? 'library' : state.view === 'newsDetail' ? 'news' : state.view;
+  $('#nav').innerHTML = navItems.map(([key, icon, label]) => `
+    <button class="nav-btn ${activeNav === key ? 'active' : ''}" data-nav="${key}">
+      ${icon}<span>${label}</span>${key === 'news' && unseen ? '<span class="dot-badge"></span>' : ''}
     </button>`).join('');
   $$('#nav .nav-btn').forEach((b) => b.addEventListener('click', () => {
     state.view = b.dataset.nav;
@@ -301,15 +442,16 @@ function renderSidebar() {
     render();
   }));
 
-  $('#instances-label').textContent = t('sidebar.instances');
-  $('#btn-new').textContent = t('sidebar.new');
-  $('#btn-import').textContent = t('sidebar.import');
+  $('#instances-label').textContent = t('sidebar.instances').toUpperCase();
+  $('#instances-count').textContent = String(state.instances.length || '');
+  $('#btn-new').innerHTML = `${ICONS.plus}${t('sidebar.new').replace(/^＋\s*/, '')}`;
+  $('#btn-import').innerHTML = `${ICONS.download}${t('sidebar.import').replace(/^⬇\s*/, '')}`;
 
   const discordBtn = $('#btn-discord');
   const discordUrl = state.group?.config?.discordUrl;
   if (discordUrl) {
     discordBtn.classList.remove('hidden');
-    discordBtn.textContent = `💬 ${t('sidebar.discord')}`;
+    discordBtn.innerHTML = `${ICONS.discord}${t('sidebar.discord')}<span class="arrow">↗</span>`;
     discordBtn.onclick = () => api('app:openExternal', { url: discordUrl }).catch((e) => toast(e.message, 'error'));
   } else {
     discordBtn.classList.add('hidden');
@@ -318,19 +460,26 @@ function renderSidebar() {
   const list = $('#instance-list');
   list.innerHTML = state.instances.map((i) => `
     <button class="instance-item ${state.currentId === i.id && state.view === 'instance' ? 'active' : ''}" data-id="${esc(i.id)}">
-      <span class="dot ${i.running ? 'running' : ''}"></span>
-      <span class="ii-name">${esc(i.name)}<div class="ii-sub">${esc(i.mc.version)} · ${esc(loaderLabel(i))}</div></span>
-    </button>`).join('') || `<div class="muted" style="padding:8px">${t('sidebar.noInstances')}</div>`;
+      <span class="art" style="background:${artGradient(i.name)}">${i.running ? '<span class="run-dot"></span>' : ''}</span>
+      <span class="grow">
+        <span class="ii-name">${esc(i.name)}</span>
+        <span class="ii-sub">${esc(i.mc.version)} · ${esc(loaderLabel(i))}</span>
+      </span>
+    </button>`).join('') || `<div class="muted" style="padding:8px;font-size:12px">${t('sidebar.noInstances')}</div>`;
   $$('.instance-item', list).forEach((el) => el.addEventListener('click', () => openInstance(el.dataset.id)));
+
+  $('#gp-idle').textContent = t('gp.idle');
 }
 
 function render() {
   renderSidebar();
+  renderTopbar();
   renderAccountChip();
   const main = $('#main');
   if (state.view === 'settings') return renderGlobalSettings(main);
   if (state.view === 'group') return renderGroup(main);
   if (state.view === 'news') return renderNews(main);
+  if (state.view === 'newsDetail') return renderNewsDetail(main);
   if (state.view === 'instance' && state.current) return renderInstance(main);
   return renderLibrary(main);
 }
@@ -340,48 +489,87 @@ function render() {
 function renderGroup(main) {
   const g = state.group;
   if (!g?.config) {
-    main.innerHTML = `<div class="empty"><h2>🌐</h2><p>${esc(g?.error || t('group.notConfigured'))}</p></div>`;
+    main.innerHTML = `
+      <div class="empty-state error">
+        <div class="icon">!</div>
+        <h2>${t('group.errorTitle')}</h2>
+        <p>${esc(g?.error || t('group.notConfigured'))}</p>
+        <button class="btn danger" id="grp-retry">${t('group.retry')}</button>
+      </div>`;
+    $('#grp-retry').addEventListener('click', () => refreshGroup({ force: true }));
     return;
   }
   const cfg = g.config;
   main.innerHTML = `
-    <div class="toolbar">
-      <h1>${esc(cfg.groupName)} — ${t('group.title')}</h1>
-      <div class="spacer"></div>
-      <button class="btn" id="grp-refresh">🔄 ${t('common.refresh')}</button>
+    <div class="view-head">
+      <div>
+        <h1>${esc(cfg.groupName)}</h1>
+        <div class="sub">${t('group.title')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex:none">
+        ${g.fromCache ? `<span class="chip-cached">${t('group.fromCache')}</span>` : ''}
+        <button class="btn" id="grp-refresh">${ICONS.refresh}${t('common.refresh')}</button>
+      </div>
     </div>
-    ${g.fromCache ? `<div class="offline-note">${t('group.fromCache')}</div>` : ''}
-    ${cfg.packs.length ? '' : `<p class="muted">${t('group.empty')}</p>`}
-    ${cfg.packs.map((p) => {
-      const install = g.installs?.[p.id];
-      const server = serverString(p.server);
-      return `
-        <div class="pack-row">
-          ${packIcon(p.name)}
-          <div class="grow">
-            <h3>${esc(p.name)} ${p.recommended ? `<span class="star">${t('group.recommended')}</span>` : ''}</h3>
-            ${p.description ? `<div class="desc">${esc(p.description)}</div>` : ''}
-            <div class="meta-line">
-              ${server ? `${t('group.server')}: <b>${esc(server)}</b> · ` : ''}
-              ${install ? `${t('group.installed')}${install.packVersion ? ` · v${esc(install.packVersion)}` : ''}` : ''}
+    ${cfg.packs.length ? '' : `
+      <div class="empty-state">
+        <div class="icon">${ICONS.group}</div>
+        <h2>${t('group.emptyTitle')}</h2>
+        <p>${t('group.empty')}</p>
+      </div>`}
+    <div class="pack-grid">
+      ${cfg.packs.map((p) => {
+        const install = g.installs?.[p.id];
+        const inst = install ? state.instances.find((i) => i.id === install.instanceId) : null;
+        const server = serverString(p.server);
+        return `
+          <div class="pack-card">
+            <div class="strip" style="background:${artGradient(p.name)}"></div>
+            <div class="body">
+              <div class="head">
+                <div class="p-icon art-tile" style="background:${artGradient(p.name)}"></div>
+                <div style="flex:1;min-width:0">
+                  <h3>${esc(p.name)}</h3>${p.recommended ? `<span class="pill star">★ ${t('group.recommended').replace(/^★\s*/, '')}</span>` : ''}
+                  ${p.description ? `<div class="desc">${esc(p.description)}</div>` : ''}
+                </div>
+              </div>
+              ${server ? `
+                <div class="server-row">
+                  <span class="ip" data-copy-ip="${esc(server)}" title="Copy">${esc(server)}</span>
+                  <span class="status" data-ping-slot="${esc(server)}"><span class="s-dot"></span>${t('group.srvChecking')}</span>
+                </div>` : ''}
+              <div style="flex:1"></div>
+              <div class="actions">
+                ${install ? `
+                  <div class="installed-row">
+                    <span class="installed-tag">${ICONS.check}${t('group.installed')}${install.packVersion ? ` · v${esc(install.packVersion)}` : ''}</span>
+                    <div style="flex:1"></div>
+                    <button class="btn" data-open="${esc(install.instanceId)}">${t('group.open')}</button>
+                    ${inst && !inst.running ? `<button class="btn play-sm" data-play="${esc(install.instanceId)}">${ICONS.play}${t('inst.play').replace(/^▶\s*/, '')}</button>` : ''}
+                  </div>` : `
+                  <button class="btn gold-big install-big" data-install="${esc(p.id)}">${ICONS.download}${t('group.install')}</button>`}
+              </div>
             </div>
-          </div>
-          ${install
-            ? `<button class="btn" data-open="${esc(install.instanceId)}">${t('group.open')}</button>`
-            : `<button class="btn primary" data-install="${esc(p.id)}">${t('group.install')}</button>`}
-        </div>`;
-    }).join('')}`;
+          </div>`;
+      }).join('')}
+    </div>`;
 
   $('#grp-refresh').addEventListener('click', () => refreshGroup({ force: true }));
   $$('[data-open]', main).forEach((b) => b.addEventListener('click', () => openInstance(b.dataset.open)));
+  $$('[data-play]', main).forEach((b) => b.addEventListener('click', () => playInstance(b.dataset.play, true, b)));
   $$('[data-install]', main).forEach((b) => b.addEventListener('click', () => {
     const pack = cfg.packs.find((p) => p.id === b.dataset.install);
     if (pack) installGroupPack(pack);
   }));
+  $$('[data-copy-ip]', main).forEach((el) => el.addEventListener('click', async () => {
+    await api('app:copyText', { text: el.dataset.copyIp }).catch(() => {});
+    toast(t('group.copied'), 'success', 3000);
+  }));
+  for (const p of cfg.packs) if (p.server) pingAndRender(p.server);
 }
 
 async function installGroupPack(pack) {
-  const wait = modal(`<h2>${t('import.preparing')}</h2><p class="muted">${t('import.preparingSub')}</p>`);
+  const wait = waitingModal(t('import.preparing'), t('import.preparingSub'));
   let info;
   try {
     info = await api('group:beginInstall', { pack });
@@ -398,67 +586,18 @@ async function installGroupPack(pack) {
   });
 }
 
-/* ---------------- Announcements ---------------- */
-
-function annCard(a, unseenSet) {
-  return `
-    <div class="ann-card ${unseenSet?.has(a.id) ? 'unseen' : ''}">
-      <div class="ann-head">
-        <h3>${esc(a.title)}</h3>
-        ${a.pinned ? `<span class="ann-pin">${t('news.pinned')}</span>` : ''}
-        <span class="ann-date">${esc(a.date)}</span>
-      </div>
-      <div class="md">${MD.render(a.body)}</div>
-    </div>`;
-}
-
-function renderNews(main) {
-  const cfg = state.group?.config;
-  const anns = cfg?.announcements || [];
-  const unseen = new Set(unseenAnnouncements().map((a) => a.id));
-  main.innerHTML = `
-    <h1>${t('news.title')}</h1>
-    <div class="mt"></div>
-    ${anns.length ? anns.map((a) => annCard(a, unseen)).join('') : `<p class="muted">${t('news.empty')}</p>`}`;
-  if (unseen.size) {
-    api('group:markAnnouncementsSeen', { ids: [...unseen] }).then((seen) => {
-      state.settings.seenAnnouncements = seen;
-      renderSidebar();
-    }).catch(() => {});
-  }
-}
-
-function announcementPopup(unseen) {
-  const newest = unseen[0];
-  const m = modal(`
-    ${annCard(newest, null)}
-    <div class="modal-actions">
-      ${unseen.length > 1 ? `<button class="btn" id="ann-all">${t('news.viewAll')} (${unseen.length})</button>` : ''}
-      <button class="btn primary" id="ann-ok">${t('news.gotIt')}</button>
-    </div>`, { wide: true });
-  const markSeen = (ids) => api('group:markAnnouncementsSeen', { ids }).then((seen) => {
-    state.settings.seenAnnouncements = seen;
-    renderSidebar();
-  }).catch(() => {});
-  $('#ann-ok', m.el).addEventListener('click', () => { markSeen([newest.id]); m.close(); });
-  $('#ann-all', m.el)?.addEventListener('click', () => {
-    m.close();
-    state.view = 'news';
-    render();
-  });
-}
-
 /* ---------------- Library ---------------- */
 
 function renderLibrary(main) {
   if (!state.instances.length) {
     main.innerHTML = `
-      <div class="empty">
+      <div class="empty-state">
+        <div class="icon">${ICONS.library}</div>
         <h2>${t('library.welcome')}</h2>
         <p>${t('library.welcomeSub')}</p>
-        <div style="display:flex;gap:10px">
-          <button class="btn" id="e-new">${t('library.newInstance')}</button>
-          <button class="btn primary" id="e-import">${t('library.importPack')}</button>
+        <div style="display:flex;gap:12px;justify-content:center">
+          <button class="btn gold-big" id="e-new" style="padding:12px 22px">${ICONS.plus}${t('library.newInstance').replace(/^＋\s*/, '')}</button>
+          <button class="btn" id="e-import" style="padding:12px 22px">${t('library.importPack').replace(/^⬇\s*/, '')}</button>
         </div>
       </div>`;
     $('#e-new').addEventListener('click', newInstanceModal);
@@ -466,16 +605,19 @@ function renderLibrary(main) {
     return;
   }
   main.innerHTML = `
-    <h1>${t('library.title')}</h1>
-    <div class="grid">
+    <div class="lib-grid">
       ${state.instances.map((i) => `
-        <div class="card" data-id="${esc(i.id)}">
-          ${packIcon(i.name)}
-          <h3>${esc(i.name)}</h3>
-          <div class="meta">${esc(i.mc.version)} · ${esc(loaderLabel(i))}${i.packVersion ? ` · v${esc(i.packVersion)}` : ''}</div>
+        <div class="lib-card" data-id="${esc(i.id)}">
+          <div class="art" style="background:${artGradient(i.name)}">
+            ${i.running ? `<span class="badge-running"><span class="pulse"></span>${t('inst.launching').replace('…', '')}</span>` : ''}
+          </div>
+          <div class="body">
+            <h3>${esc(i.name)}</h3>
+            <div class="meta">${esc(i.mc.version)} · ${esc(loaderLabel(i))}${i.packVersion ? ` · v${esc(i.packVersion)}` : ''}</div>
+          </div>
         </div>`).join('')}
     </div>`;
-  $$('.card', main).forEach((el) => el.addEventListener('click', () => openInstance(el.dataset.id)));
+  $$('.lib-card', main).forEach((el) => el.addEventListener('click', () => openInstance(el.dataset.id)));
 }
 
 /* ---------------- Instance detail ---------------- */
@@ -485,19 +627,24 @@ function renderUpdateBanner() {
   if (!holder) return;
   const u = state.update;
   if (state.checkingUpdate) {
-    holder.innerHTML = `<div class="update-banner"><span class="muted">${t('inst.checkingUpdate')}</span></div>`;
+    holder.innerHTML = `<div class="update-banner neutral"><span class="spin">◌</span><span>${t('inst.checkingUpdate')}</span></div>`;
     return;
   }
   if (!u) { holder.innerHTML = ''; return; }
   if (u.error) {
-    holder.innerHTML = `<div class="update-banner"><span class="muted">${t('inst.updateFailed', { e: esc(u.error) })}</span></div>`;
+    holder.innerHTML = `
+      <div class="update-banner error">
+        <div class="grow" style="color:#ff9098">${t('inst.updateFailed', { e: esc(u.error) })}</div>
+        <button class="btn" id="btn-recheck">${t('group.retry')}</button>
+      </div>`;
+    $('#btn-recheck').addEventListener('click', autoCheckUpdate);
     return;
   }
   if (!u.available) { holder.innerHTML = ''; return; }
   holder.innerHTML = `
     <div class="update-banner">
-      <div class="grow"><b>${t('inst.updateAvailable')}</b><div class="muted">${esc(u.current ?? '?')} → ${esc(u.latest)}</div></div>
-      <button class="btn primary" id="btn-apply-update">${t('inst.updateNow')}</button>
+      <div class="grow"><b>${t('inst.updateAvailable')}</b> <span class="vers">${esc(u.current ?? '?')} → ${esc(u.latest)}</span></div>
+      <button class="btn purple" id="btn-apply-update">${t('inst.updateNow')}</button>
     </div>`;
   $('#btn-apply-update').addEventListener('click', applyUpdateFlow);
 }
@@ -507,23 +654,27 @@ function renderInstance(main) {
   const src = sourceLabel(inst.source);
   const server = serverString(inst.server);
   main.innerHTML = `
+    <button class="btn subtle back-btn" id="btn-back">${ICONS.back}${t('nav.library')}</button>
     <div class="detail-header">
-      ${packIcon(inst.name)}
-      <div class="detail-title">
-        <h1>${esc(inst.name)}</h1>
-        <div class="meta">
-          <span class="badge">${esc(inst.mc.version)}</span>
-          <span class="badge">${esc(loaderLabel(inst))}</span>
-          ${inst.packVersion ? `<span class="badge">${t('inst.packVersion', { v: esc(inst.packVersion) })}</span>` : ''}
-          ${src ? `<span class="badge src">${esc(src)}</span>` : ''}
-          ${server ? `<span class="badge">${t('inst.serverBadge', { addr: esc(server) })}</span>` : ''}
+      <div class="d-icon art-tile" style="background:${artGradient(inst.name)}"></div>
+      <div style="flex:1;min-width:0">
+        <div>
+          <h1>${esc(inst.name)}</h1>
+          ${inst.running ? `<span class="badge-running"><span class="pulse"></span>RUNNING</span>` : ''}
+        </div>
+        <div class="pills">
+          <span class="pill">${esc(inst.mc.version)}</span>
+          <span class="pill">${esc(loaderLabel(inst))}</span>
+          ${inst.packVersion ? `<span class="pill gold">${t('inst.packVersion', { v: esc(inst.packVersion) })}</span>` : ''}
+          ${src ? `<span class="pill">${esc(src)}</span>` : ''}
+          ${server ? `<span class="pill purple">${esc(server)}</span>` : ''}
         </div>
       </div>
-      <div class="detail-actions">
+      <div class="actions">
         ${inst.running
-          ? `<button class="btn danger" id="btn-kill">${t('inst.stop')}</button>`
-          : `${server ? `<button class="btn small" id="btn-play-solo">${t('inst.playSolo')}</button>` : ''}
-             <button class="btn play" id="btn-play">${server ? t('inst.playJoin') : t('inst.play')}</button>`}
+          ? `<button class="btn danger stop-big" id="btn-kill">${ICONS.stop}${t('inst.stop').replace(/^■\s*/, '')}</button>`
+          : `<button class="btn play-big" id="btn-play">${ICONS.play}${(server ? t('inst.playJoin') : t('inst.play')).replace(/^▶\s*/, '')}</button>
+             ${server ? `<button class="link-btn" id="btn-play-solo">${t('inst.playSolo')}</button>` : ''}`}
       </div>
     </div>
     <div id="update-banner-holder"></div>
@@ -534,9 +685,10 @@ function renderInstance(main) {
     </div>
     <div id="tab-body"></div>`;
 
+  $('#btn-back').addEventListener('click', () => { state.view = 'library'; state.currentId = null; render(); });
   $$('.tab', main).forEach((x) => x.addEventListener('click', () => { state.tab = x.dataset.tab; render(); }));
-  $('#btn-play')?.addEventListener('click', () => playCurrent(true));
-  $('#btn-play-solo')?.addEventListener('click', () => playCurrent(false));
+  $('#btn-play')?.addEventListener('click', (e) => playInstance(inst.id, true, e.currentTarget));
+  $('#btn-play-solo')?.addEventListener('click', () => playInstance(inst.id, false));
   $('#btn-kill')?.addEventListener('click', async () => { await api('launch:kill', { id: inst.id }); refreshInstances(); });
   renderUpdateBanner();
 
@@ -554,28 +706,36 @@ function renderModsTab(body) {
   const notInstalled = Object.entries(catalog).filter(([rel]) => !onDisk.has(rel) && !choices[rel]);
 
   body.innerHTML = `
-    <div class="toolbar">
-      <button class="btn" id="btn-add-jar">${t('mods.addJar')}</button>
-      <div class="spacer"></div>
-      <input type="text" id="mod-search" placeholder="${t('mods.searchPlaceholder')}" style="max-width:300px" />
-      <button class="btn" id="btn-mod-search">${t('common.search')}</button>
-    </div>
-    <div id="mod-search-results"></div>
-    ${state.mods.length === 0 && notInstalled.length === 0 ? `<p class="muted">${t('mods.none')}</p>` : ''}
-    ${state.mods.map((m) => `
-      <div class="mod-row ${m.enabled ? '' : 'disabled'}">
-        <label class="switch"><input type="checkbox" data-toggle="${esc(m.file)}" data-rel="mods/${esc(m.name)}" data-optional="${m.optional ? '1' : ''}" ${m.enabled ? 'checked' : ''}/><span class="slider"></span></label>
-        <span class="mod-name" title="${esc(m.name)}">${esc(m.name)}</span>
-        ${m.fromPack ? `<span class="badge">${m.optional ? t('mods.optional') : t('mods.pack')}</span>` : `<span class="badge">${t('mods.yours')}</span>`}
-        ${!m.fromPack || m.optional ? `<button class="icon-btn" title="${t('common.delete')}" data-del="${esc(m.file)}">🗑</button>` : ''}
-      </div>`).join('')}
-    ${notInstalled.length ? `<h2 class="mt">${t('mods.optionalHeader')}</h2>` : ''}
-    ${notInstalled.map(([rel, meta]) => `
-      <div class="mod-row disabled">
-        <label class="switch"><input type="checkbox" data-opt-install="${esc(rel)}"/><span class="slider"></span></label>
-        <span class="mod-name">${esc(meta.name || rel)}</span>
-        <span class="badge">${t('mods.notInstalled')}</span>
-      </div>`).join('')}`;
+    <div class="mods-wrap">
+      <div class="mods-toolbar">
+        <button class="btn" id="btn-add-jar">${ICONS.download}${t('mods.addJar').replace(/^＋\s*/, '')}</button>
+        <div class="search-box">${ICONS.search}<input type="text" id="mod-search" placeholder="${t('mods.searchPlaceholder')}"/></div>
+        <button class="btn" id="btn-mod-search">${t('common.search')}</button>
+      </div>
+      <div id="mod-search-results"></div>
+      <div class="section-label">${t('mods.installedHeader')} · ${state.mods.length}</div>
+      <div class="mod-rows">
+        ${state.mods.length === 0 && notInstalled.length === 0 ? `<p class="muted" style="padding:6px 2px">${t('mods.none')}</p>` : ''}
+        ${state.mods.map((m) => `
+          <div class="mod-row ${m.enabled ? '' : 'off'}">
+            <label class="switch"><input type="checkbox" data-toggle="${esc(m.file)}" data-rel="mods/${esc(m.name)}" data-optional="${m.optional ? '1' : ''}" ${m.enabled ? 'checked' : ''}/><span class="slider"></span></label>
+            <span class="mod-name" title="${esc(m.name)}">${esc(m.name)}</span>
+            ${m.fromPack ? `<span class="pill ${m.optional ? 'purple' : 'gold'}">${m.optional ? t('mods.optional') : t('mods.pack')}</span>` : `<span class="pill">${t('mods.yours')}</span>`}
+            ${!m.fromPack || m.optional ? `<button class="icon-btn" title="${t('common.delete')}" data-del="${esc(m.file)}">${ICONS.trash}</button>` : ''}
+          </div>`).join('')}
+      </div>
+      ${notInstalled.length ? `<div class="section-label" style="margin-top:22px">${t('mods.optionalHeader').toUpperCase()}</div>` : ''}
+      <div class="mod-rows">
+        ${notInstalled.map(([rel, meta]) => `
+          <div class="mod-row dashed">
+            <div style="flex:1;min-width:0">
+              <div class="mod-name">${esc(meta.name || rel)}</div>
+              <div class="sub">${t('mods.notInstalled')}</div>
+            </div>
+            <button class="btn" data-opt-install="${esc(rel)}">${t('group.install')}</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
 
   $('#btn-add-jar').addEventListener('click', async () => {
     try { state.mods = await api('mods:addLocal', { id: inst.id }); render(); } catch (err) { toast(err.message, 'error'); }
@@ -585,20 +745,25 @@ function renderModsTab(body) {
     const q = $('#mod-search').value.trim();
     if (!q) return;
     const holder = $('#mod-search-results');
-    holder.innerHTML = `<p class="muted">${t('common.searching')}</p>`;
+    holder.innerHTML = `<p class="muted" style="margin-bottom:14px">${t('common.searching')}</p>`;
     try {
       const hits = await api('mods:searchModrinth', { id: inst.id, query: q });
-      holder.innerHTML = hits.length ? hits.map((h) => `
-        <div class="result-row">
-          ${h.iconUrl ? `<img src="${esc(h.iconUrl)}" alt=""/>` : '<div class="avatar"></div>'}
-          <div class="grow"><b>${esc(h.title)}</b><div class="desc">${esc(h.description)}</div></div>
-          <button class="btn" data-install="${esc(h.projectId)}">${t('mods.add')}</button>
-          <button class="btn" data-install-opt="${esc(h.projectId)}" title="${t('mods.addOptionalTitle')}">${t('mods.addOptional')}</button>
-        </div>`).join('') : `<p class="muted">${t('common.noResults')}</p>`;
+      holder.innerHTML = hits.length ? `
+        <div class="results-panel">
+          <div class="rp-head">${ICONS.star} ${t('mods.results')}</div>
+          ${hits.map((h) => `
+            <div class="result-row">
+              <div class="r-icon">${h.iconUrl ? `<img src="${esc(h.iconUrl)}" alt=""/>` : ''}</div>
+              <div class="grow"><b>${esc(h.title)}</b><div class="desc">${esc(h.description)}</div></div>
+              <span class="dl">${fmtDownloads(h.downloads)}</span>
+              <button class="btn gold" data-install="${esc(h.projectId)}" style="padding:7px 13px;font-size:12px">${t('mods.add')}</button>
+              <button class="btn subtle" data-install-opt="${esc(h.projectId)}" title="${t('mods.addOptionalTitle')}" style="padding:7px 12px;font-size:12px;white-space:nowrap">${t('mods.addOptional')}</button>
+            </div>`).join('')}
+        </div>` : `<p class="muted" style="margin-bottom:14px">${t('common.noResults')}</p>`;
       $$('[data-install]', holder).forEach((b) => b.addEventListener('click', () => installSearchedMod(b.dataset.install, false, b)));
       $$('[data-install-opt]', holder).forEach((b) => b.addEventListener('click', () => installSearchedMod(b.dataset.installOpt, true, b)));
     } catch (err) {
-      holder.innerHTML = `<p class="muted">${t('mods.searchFailed', { e: esc(err.message) })}</p>`;
+      holder.innerHTML = `<p class="muted" style="margin-bottom:14px">${t('mods.searchFailed', { e: esc(err.message) })}</p>`;
     }
   };
   $('#btn-mod-search').addEventListener('click', doSearch);
@@ -615,9 +780,10 @@ function renderModsTab(body) {
       }
     } catch (err) { toast(err.message, 'error'); render(); }
   }));
-  $$('[data-opt-install]', body).forEach((cb) => cb.addEventListener('change', async () => {
+  $$('[data-opt-install]', body).forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true;
     try {
-      await api('mods:setOptionalEnabled', { id: inst.id, rel: cb.dataset.optInstall, enabled: cb.checked });
+      await api('mods:setOptionalEnabled', { id: inst.id, rel: b.dataset.optInstall, enabled: true });
       toast(t('mods.optionalInstalled'), 'success');
       await openInstance(inst.id, 'mods');
     } catch (err) { toast(err.message, 'error'); render(); }
@@ -628,57 +794,58 @@ function renderModsTab(body) {
   }));
 }
 
-async function installSearchedMod(projectId, optional, btn) {
-  btn.disabled = true;
-  btn.textContent = t('mods.adding');
-  try {
-    const res = await api('mods:installModrinth', { id: state.currentId, project: projectId, optional });
-    toast(t('mods.added', { f: res.file }), 'success');
-    await openInstance(state.currentId, 'mods');
-  } catch (err) {
-    toast(err.message, 'error');
-    btn.disabled = false;
-    btn.textContent = optional ? t('mods.addOptional') : t('mods.add');
-  }
-}
-
 function renderInstanceSettings(body) {
   const inst = state.current;
   const s = inst.settings || {};
   const isGroupManaged = !!inst.source?.groupPackId;
+  const server = serverString(inst.server) || '';
   body.innerHTML = `
-    <section class="settings-block">
-      <h2>${t('iset.general')}</h2>
-      <div class="field"><label>${t('iset.name')}</label><input type="text" id="is-name" value="${esc(inst.name)}"/></div>
-      <div class="field-row">
-        <div class="field"><label>${t('iset.maxRam')}</label><input type="text" id="is-memmax" placeholder="e.g. 8" value="${esc(s.memoryMax || '')}"/></div>
-        <div class="field"><label>${t('iset.minRam')}</label><input type="text" id="is-memmin" placeholder="e.g. 1G" value="${esc(s.memoryMin || '')}"/></div>
-      </div>
-      <div class="field"><label>${t('iset.javaPath')}</label><input type="text" id="is-java" placeholder="${t('iset.javaPlaceholder')}" value="${esc(s.javaPath || '')}"/></div>
-      <div class="field"><label>${t('iset.jvmArgs')}</label><input type="text" id="is-jvm" value="${esc(s.jvmArgs || '')}"/></div>
-      <button class="btn primary" id="is-save">${t('common.save')}</button>
-    </section>
-    <section class="settings-block">
-      <h2>${t('iset.serverTitle')}</h2>
-      ${isGroupManaged ? `<p class="muted" style="margin-bottom:10px">${t('iset.serverManaged')}</p>` : ''}
-      <div class="field">
-        <label>${t('iset.server')}</label>
-        <input type="text" id="is-server" placeholder="${t('iset.serverPlaceholder')}" value="${esc(serverString(inst.server) || '')}" ${isGroupManaged ? 'disabled' : ''}/>
-        <div class="hint">${t('iset.serverHint')}</div>
-      </div>
-      ${isGroupManaged ? '' : `<button class="btn" id="is-server-save">${t('common.save')}</button>`}
-    </section>
-    <section class="settings-block">
-      <h2>${t('iset.sharing')}</h2>
-      <p class="muted" style="margin-bottom:12px">${t('iset.sharingHint')}</p>
-      <button class="btn" id="is-export">${t('iset.export')}</button>
-      <button class="btn" id="is-check-update">${t('iset.checkUpdates')}</button>
-      <button class="btn" id="is-open">${t('iset.openFolder')}</button>
-    </section>
-    <section class="settings-block">
-      <h2>${t('iset.danger')}</h2>
-      <button class="btn danger" id="is-delete">${t('iset.deleteInstance')}</button>
-    </section>`;
+    <div class="settings-col">
+      <section class="settings-card">
+        <h2>${t('iset.general')}</h2>
+        <div class="field"><label>${t('iset.name')}</label><input type="text" id="is-name" value="${esc(inst.name)}"/></div>
+        <div class="field-row">
+          <div class="field"><label>${t('iset.maxRam')}</label><input type="text" class="mono" id="is-memmax" placeholder="8G" value="${esc(s.memoryMax || '')}"/></div>
+          <div class="field"><label>${t('iset.minRam')}</label><input type="text" class="mono" id="is-memmin" placeholder="1G" value="${esc(s.memoryMin || '')}"/></div>
+        </div>
+        <div class="field"><label>${t('iset.javaPath')}</label><input type="text" class="mono" id="is-java" placeholder="${t('iset.javaPlaceholder')}" value="${esc(s.javaPath || '')}"/></div>
+        <div class="field"><label>${t('iset.jvmArgs')}</label><input type="text" class="mono" id="is-jvm" value="${esc(s.jvmArgs || '')}"/></div>
+        <button class="btn gold" id="is-save">${t('common.save')}</button>
+      </section>
+      <section class="settings-card">
+        <h2>${t('iset.serverTitle')}</h2>
+        ${isGroupManaged ? `
+          <div class="server-locked">
+            ${ICONS.lock}
+            <div style="flex:1">
+              <div class="addr">${esc(server) || '—'}</div>
+              <div class="note">${t('iset.serverManaged')}</div>
+            </div>
+          </div>` : `
+          <div class="field">
+            <label>${t('iset.server')}</label>
+            <input type="text" class="mono" id="is-server" placeholder="${t('iset.serverPlaceholder')}" value="${esc(server)}"/>
+            <div class="hint">${t('iset.serverHint')}</div>
+          </div>
+          <button class="btn" id="is-server-save">${t('common.save')}</button>`}
+      </section>
+      <section class="settings-card">
+        <h2>${t('iset.sharing')}</h2>
+        <p class="muted" style="margin:-6px 0 14px;font-size:13px">${t('iset.sharingHint')}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <button class="btn" id="is-export">${ICONS.upload}${t('iset.export').replace(/^📤\s*/, '')}</button>
+          <button class="btn" id="is-check-update">${ICONS.refresh}${t('iset.checkUpdates').replace(/^🔄\s*/, '')}</button>
+          <button class="btn" id="is-open">${ICONS.folder}${t('iset.openFolder').replace(/^📁\s*/, '')}</button>
+        </div>
+      </section>
+      <section class="danger-card">
+        <h2>${t('iset.danger')}</h2>
+        <div class="row">
+          <p>${t('iset.dangerDesc')}</p>
+          <button class="btn danger" id="is-delete">${t('iset.deleteInstance')}</button>
+        </div>
+      </section>
+    </div>`;
 
   $('#is-save').addEventListener('click', async () => {
     try {
@@ -721,88 +888,242 @@ function renderInstanceSettings(body) {
 function renderLogsTab(body) {
   const buf = state.logs[state.currentId] || [];
   body.innerHTML = `
-    <div class="toolbar">
-      <button class="btn" id="log-clear">${t('logs.clear')}</button>
-    </div>
-    <pre class="logs" id="log-pre">${esc(buf.join('\n')) || t('logs.empty')}</pre>`;
+    <div style="max-width:900px">
+      <div class="logs-head">
+        <span class="lh-label">${buf.length} lines</span>
+        <button class="btn subtle" id="log-clear">${ICONS.trash}${t('logs.clear')}</button>
+      </div>
+      ${buf.length
+        ? `<pre class="logs" id="log-pre">${esc(buf.join('\n'))}</pre>`
+        : `<div class="logs empty" id="log-pre">${t('logs.empty')}</div>`}
+    </div>`;
   const pre = $('#log-pre');
   pre.scrollTop = pre.scrollHeight;
   $('#log-clear').addEventListener('click', () => { state.logs[state.currentId] = []; renderLogsTab(body); });
 }
 
+/* ---------------- News ---------------- */
+
+function editConfigUrl() {
+  const url = (state.settings.groupConfigUrl || state.group?.url || '').trim();
+  const m = String(url).match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+  if (!m) return null;
+  return `https://github.com/${m[1]}/${m[2]}/edit/${m[3]}/${m[4]}`;
+}
+
+function annCardHtml(a, unseenSet) {
+  const tagCls = tagPillClass(a.tag || 'update');
+  return `
+    <div class="ann-card ${unseenSet?.has(a.id) ? 'unseen' : ''}" data-ann="${esc(a.id)}">
+      <div class="a-icon" style="background:${artGradient(a.id + a.title)}">${esc(a.emoji || '📣')}</div>
+      <div class="grow">
+        <div class="tags">
+          ${a.tag ? `<span class="pill ${tagCls}">${esc(a.tag)}</span>` : ''}
+          ${a.pinned ? `<span class="pill pin">${t('news.pinned')}</span>` : ''}
+          ${unseenSet?.has(a.id) ? `<span class="pill new-chip">${t('news.unseenChip')}</span>` : ''}
+        </div>
+        <h3>${esc(a.title)}</h3>
+        <div class="excerpt">${esc(excerptOf(a.body))}</div>
+        <div class="byline">${t('news.by')} ${esc(a.author || '')} · ${esc(a.date)}</div>
+      </div>
+    </div>`;
+}
+
+function renderNews(main) {
+  const cfg = state.group?.config;
+  const anns = cfg?.announcements || [];
+  const unseen = new Set(unseenAnnouncements().map((a) => a.id));
+  const editUrl = editConfigUrl();
+  main.innerHTML = `
+    ${editUrl ? `<div class="news-topbar"><button class="btn gold" id="new-ann">${ICONS.plus}${t('news.newAnn')}</button></div>` : ''}
+    ${anns.length ? `<div class="news-col">${anns.map((a) => annCardHtml(a, unseen)).join('')}</div>` : `
+      <div class="empty-state">
+        <div class="icon">${ICONS.news}</div>
+        <h2>${t('news.empty')}</h2>
+      </div>`}`;
+  $('#new-ann')?.addEventListener('click', () => api('app:openExternal', { url: editUrl }).catch(() => {}));
+  $$('[data-ann]', main).forEach((el) => el.addEventListener('click', () => {
+    state.newsId = el.dataset.ann;
+    state.view = 'newsDetail';
+    markSeen([state.newsId]);
+    render();
+  }));
+}
+
+function renderNewsDetail(main) {
+  const cfg = state.group?.config;
+  const a = cfg?.announcements.find((x) => x.id === state.newsId);
+  if (!a) { state.view = 'news'; return renderNews(main); }
+  const tagCls = tagPillClass(a.tag || 'update');
+  main.innerHTML = `
+    <button class="btn subtle back-btn" id="news-back">${ICONS.back}${t('nav.news')}</button>
+    <div class="news-detail">
+      <div class="hero" style="background:${artGradient(a.id + a.title)}"><span class="emoji">${esc(a.emoji || '📣')}</span></div>
+      ${a.tag ? `<span class="pill ${tagCls}">${esc(a.tag)}</span>` : ''}
+      <h1>${esc(a.title)}</h1>
+      <div class="byline"><span class="a-avatar">${esc((a.author || 'Iz').slice(0, 2))}</span>${esc(a.author || '')} · ${esc(a.date)}</div>
+      <div class="md">${MD.render(a.body)}</div>
+    </div>`;
+  $('#news-back').addEventListener('click', () => { state.view = 'news'; render(); });
+}
+
+function announcementPopup(unseen) {
+  const newest = unseen[0];
+  const m = modal(`
+    <div class="popup-hero" style="background:${artGradient(newest.id + newest.title)}"><span class="emoji">${esc(newest.emoji || '📣')}</span></div>
+    <div class="modal-body">
+      ${newest.tag ? `<span class="pill ${tagPillClass(newest.tag)}">${esc(newest.tag)}</span>` : ''}
+      <div style="font:800 20px var(--font-disp);letter-spacing:-.01em;margin:12px 0 8px;line-height:1.2">${esc(newest.title)}</div>
+      <div style="color:var(--muted);line-height:1.55">${esc(excerptOf(newest.body, 220))}</div>
+      <div style="font:500 12px var(--font-mono);color:var(--dim);margin-top:12px">${t('news.by')} ${esc(newest.author || '')} · ${esc(newest.date)}</div>
+      <div class="modal-actions">
+        <button class="btn gold-big grow-btn" id="ann-ok" style="flex:1;height:46px">${t('news.gotIt')}</button>
+        ${unseen.length > 1 ? `<button class="btn" id="ann-all" style="height:46px">${t('news.viewAll')} (${unseen.length})</button>` : `<button class="btn" id="ann-read" style="height:46px">${t('news.viewAll')}</button>`}
+      </div>
+    </div>`, { cls: 'narrow' });
+  $('#ann-ok', m.el).addEventListener('click', () => { markSeen([newest.id]); m.close(); });
+  const goNews = () => { m.close(); state.view = 'news'; render(); };
+  $('#ann-all', m.el)?.addEventListener('click', goNews);
+  $('#ann-read', m.el)?.addEventListener('click', () => {
+    m.close();
+    state.newsId = newest.id;
+    state.view = 'newsDetail';
+    markSeen([newest.id]);
+    render();
+  });
+}
+
 /* ---------------- Global settings ---------------- */
+
+const ACCENTS = [
+  { id: 'gold-ench', accent2: '#a970ff', dots: ['#e6b53f', '#a970ff'], label: 'settings.accentGoldEnch' },
+  { id: 'gold-green', accent2: '#46d17f', dots: ['#e6b53f', '#46d17f'], label: 'settings.accentGoldGreen' },
+  { id: 'ench', accent2: '#c9a6ff', dots: ['#a970ff', '#6d5bd0'], label: 'settings.accentEnch' },
+];
+
+function applyAccent() {
+  const acc = ACCENTS.find((a) => a.id === (state.settings.accent || 'gold-ench')) || ACCENTS[0];
+  document.documentElement.style.setProperty('--accent2', acc.accent2);
+}
+
+function ramGbFrom(memStr) {
+  const m = String(memStr || '8G').match(/^(\d+)\s*([gGmM])?/);
+  if (!m) return 8;
+  let v = parseInt(m[1], 10);
+  if ((m[2] || 'G').toUpperCase() === 'M') v = Math.round(v / 1024) || 1;
+  return Math.min(16, Math.max(2, v));
+}
 
 function renderGlobalSettings(main) {
   const s = state.settings;
+  const ramGb = ramGbFrom(s.memoryMax);
+  const conc = Math.min(12, Math.max(1, Number(s.downloadConcurrency) || 6));
   main.innerHTML = `
-    <h1>${t('settings.title')}</h1>
-    <section class="settings-block mt">
-      <h2>${t('settings.language')}</h2>
-      <div class="field">
-        <select id="gs-lang">
-          <option value="auto" ${s.language === 'auto' ? 'selected' : ''}>${t('settings.langAuto')}</option>
-          <option value="es" ${s.language === 'es' ? 'selected' : ''}>Español</option>
-          <option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option>
-        </select>
+    <div class="settings-col">
+      <section class="settings-card">
+        <h2>${t('settings.language')}</h2>
+        <div class="seg-row">
+          <button class="seg-btn ${s.language === 'auto' ? 'active' : ''}" data-set-lang="auto">${t('settings.langAuto')}</button>
+          <button class="seg-btn ${s.language === 'es' ? 'active' : ''}" data-set-lang="es">Español</button>
+          <button class="seg-btn ${s.language === 'en' ? 'active' : ''}" data-set-lang="en">English</button>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h2>${t('settings.defaults')}</h2>
+        <div style="margin-bottom:18px">
+          <div class="slider-head"><span style="color:var(--muted)">${t('settings.allocMem')}</span><span class="val" id="ram-val">${ramGb} GB</span></div>
+          <input type="range" id="gs-ram" min="2" max="16" step="1" value="${ramGb}"/>
+          <div class="slider-scale"><span>2 GB</span><span>16 GB</span></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="s-title">${t('settings.concurrency')}</div><div class="s-desc">${t('settings.concDesc')}</div></div>
+          <div class="stepper">
+            <button id="conc-minus">−</button>
+            <span class="val" id="conc-val">${conc}</span>
+            <button id="conc-plus">+</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div><div class="s-title">${t('settings.snapshots')}</div><div class="s-desc">${t('settings.snapDesc')}</div></div>
+          <label class="switch"><input type="checkbox" id="gs-snapshots" ${s.showSnapshots ? 'checked' : ''}/><span class="slider"></span></label>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h2>${t('settings.integrations')}</h2>
+        <div class="field">
+          <label>${t('settings.cfKey')}</label>
+          <input type="password" class="mono" id="gs-cfkey" value="${esc(s.curseforgeApiKey)}"/>
+          <div class="hint">${t('settings.cfHint')}</div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>${t('settings.groupUrl')}<span class="tag-advanced">${t('settings.advancedTag')}</span></label>
+          <input type="text" class="mono" id="gs-group" value="${esc(s.groupConfigUrl)}"/>
+          <div class="hint">${t('settings.groupHint')}</div>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h2>${t('settings.appearance')}</h2>
+        <p class="muted" style="margin:-8px 0 16px;font-size:12px">${t('settings.appearanceDesc')}</p>
+        <div class="accent-row">
+          ${ACCENTS.map((a) => `
+            <div class="accent-card ${(s.accent || 'gold-ench') === a.id ? 'active' : ''}" data-accent="${a.id}">
+              <div class="dots"><span style="background:${a.dots[0]}"></span><span style="background:${a.dots[1]}"></span></div>
+              <div class="a-name">${t(a.label)}</div>
+            </div>`).join('')}
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h2>${t('settings.launcher')}</h2>
+        <div style="font:500 12px var(--font-mono);color:var(--muted)">${t('settings.dataFolder', { p: esc(state.appInfo.dataDir || '') })}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px">
+          <button class="btn" id="gs-open-data">${t('settings.openData')}</button>
+          <button class="btn" id="gs-open-exports">${t('settings.openExports')}</button>
+          <button class="btn" id="gs-check-update">${t('settings.checkUpdates')}</button>
+        </div>
+      </section>
+
+      <div class="settings-footer">
+        <button class="btn gold" id="gs-save" style="padding:10px 24px;font-size:14px">${t('settings.saveBtn')}</button>
+        <span class="ver">IzLauncher v${esc(state.appInfo.version || 'dev')} · ${t('settings.madeBy')} 🍎</span>
       </div>
-    </section>
-    <section class="settings-block">
-      <h2>${t('settings.defaults')}</h2>
-      <div class="field-row">
-        <div class="field"><label>${t('settings.maxRam')}</label><input type="text" id="gs-memmax" value="${esc(s.memoryMax)}"/></div>
-        <div class="field"><label>${t('settings.minRam')}</label><input type="text" id="gs-memmin" value="${esc(s.memoryMin)}"/></div>
-      </div>
-      <div class="field"><label>${t('settings.concurrency')}</label><input type="text" id="gs-conc" value="${esc(s.downloadConcurrency)}"/></div>
-      <div class="check-row"><input type="checkbox" id="gs-snapshots" ${s.showSnapshots ? 'checked' : ''}/><label for="gs-snapshots">${t('settings.snapshots')}</label></div>
-    </section>
-    <section class="settings-block">
-      <h2>${t('settings.cf')}</h2>
-      <div class="field">
-        <label>${t('settings.cfKey')}</label>
-        <input type="password" id="gs-cfkey" value="${esc(s.curseforgeApiKey)}"/>
-        <div class="hint">${t('settings.cfHint')}</div>
-      </div>
-    </section>
-    <section class="settings-block">
-      <h2>${t('settings.group')}</h2>
-      <div class="field">
-        <label>${t('settings.groupUrl')}</label>
-        <input type="text" id="gs-group" value="${esc(s.groupConfigUrl)}"/>
-        <div class="hint">${t('settings.groupHint')}</div>
-      </div>
-    </section>
-    <section class="settings-block">
-      <h2>${t('settings.launcher')}</h2>
-      <p class="muted">${t('settings.dataFolder', { p: esc(state.appInfo.dataDir || '') })}</p>
-      <div class="mt">
-        <button class="btn" id="gs-open-data">${t('settings.openData')}</button>
-        <button class="btn" id="gs-open-exports">${t('settings.openExports')}</button>
-        <button class="btn" id="gs-check-update">${t('settings.checkUpdates')}</button>
-      </div>
-    </section>
-    <button class="btn primary" id="gs-save">${t('settings.saveBtn')}</button>
-    <p class="muted mt">IzLauncher v${esc(state.appInfo.version || 'dev')}</p>`;
+    </div>`;
+
+  let ram = ramGb;
+  let concurrency = conc;
+  $('#gs-ram').addEventListener('input', (e) => {
+    ram = Number(e.target.value);
+    $('#ram-val').textContent = `${ram} GB`;
+  });
+  $('#conc-minus').addEventListener('click', () => { concurrency = Math.max(1, concurrency - 1); $('#conc-val').textContent = concurrency; });
+  $('#conc-plus').addEventListener('click', () => { concurrency = Math.min(12, concurrency + 1); $('#conc-val').textContent = concurrency; });
+
+  $$('[data-set-lang]', main).forEach((b) => b.addEventListener('click', async () => {
+    state.settings = await api('settings:set', { language: b.dataset.setLang });
+    applyLanguage();
+    render();
+  }));
+  $$('[data-accent]', main).forEach((el) => el.addEventListener('click', async () => {
+    state.settings = await api('settings:set', { accent: el.dataset.accent });
+    applyAccent();
+    render();
+  }));
 
   $('#gs-save').addEventListener('click', async () => {
     try {
       state.settings = await api('settings:set', {
-        language: $('#gs-lang').value,
-        memoryMax: $('#gs-memmax').value.trim() || '4G',
-        memoryMin: $('#gs-memmin').value.trim() || '1G',
-        downloadConcurrency: Math.max(1, parseInt($('#gs-conc').value, 10) || 6),
+        memoryMax: `${ram}G`,
+        downloadConcurrency: concurrency,
         showSnapshots: $('#gs-snapshots').checked,
         curseforgeApiKey: $('#gs-cfkey').value.trim(),
         groupConfigUrl: $('#gs-group').value.trim(),
       });
-      applyLanguage();
       toast(t('settings.savedToast'), 'success');
       refreshGroup({ force: true });
     } catch (err) { toast(err.message, 'error'); }
-  });
-  $('#gs-lang').addEventListener('change', async () => {
-    state.settings = await api('settings:set', { language: $('#gs-lang').value });
-    applyLanguage();
-    render();
   });
   $('#gs-open-data').addEventListener('click', () => api('app:openPath', { target: 'data' }));
   $('#gs-open-exports').addEventListener('click', () => api('app:openPath', { target: 'exports' }));
@@ -825,32 +1146,32 @@ function accountsModal() {
   const renderBody = () => {
     const { list, activeId } = state.accounts;
     return `
-      <h2>${t('accounts.title')}</h2>
       ${list.length ? list.map((a) => `
-        <div class="result-row">
-          <img src="https://mc-heads.net/avatar/${encodeURIComponent(a.type === 'msa' ? a.id : a.name)}/34" alt=""/>
-          <div class="grow"><b>${esc(a.name)}</b><div class="desc">${a.type === 'msa' ? t('accounts.microsoft') : t('accounts.offline')}${a.id === activeId ? ` · ${t('accounts.active')}` : ''}</div></div>
-          ${a.id !== activeId ? `<button class="btn" data-active="${esc(a.id)}">${t('accounts.use')}</button>` : ''}
-          <button class="icon-btn" data-remove="${esc(a.id)}" title="${t('common.delete')}">🗑</button>
-        </div>`).join('') : `<p class="muted">${t('accounts.none')}</p>`}
-      <div class="modal-actions" style="justify-content:flex-start">
-        <button class="btn primary" id="acc-ms">${t('accounts.signin')}</button>
-      </div>
-      <div class="field mt">
-        <label>${t('accounts.offlineLabel')}</label>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="acc-offline-name" placeholder="PlayerName" maxlength="16"/>
-          <button class="btn" id="acc-offline-add">${t('accounts.add')}</button>
+        <div class="acct-row">
+          <div class="a-avatar"><img src="https://mc-heads.net/avatar/${encodeURIComponent(a.type === 'msa' ? a.id : a.name)}/80" alt=""/></div>
+          <div class="grow"><b>${esc(a.name)}</b><div class="a-type">${a.type === 'msa' ? t('accounts.microsoft') : t('accounts.offline')}</div></div>
+          ${a.id === activeId
+            ? `<span class="pill active-acct"><span style="width:6px;height:6px;border-radius:50%;background:var(--green)"></span>${t('accounts.active')}</span>`
+            : `<button class="btn" data-active="${esc(a.id)}" style="padding:7px 14px;font-size:12px">${t('accounts.use')}</button>`}
+          <button class="icon-btn" data-remove="${esc(a.id)}" title="${t('common.delete')}">${ICONS.trash}</button>
+        </div>`).join('') : `<p class="muted" style="margin-bottom:10px">${t('accounts.none')}</p>`}
+      <button class="btn-ms" id="acc-ms"><span class="ms-logo"><span></span><span></span><span></span><span></span></span>${t('accounts.signin')}</button>
+      <div class="offline-block">
+        <div class="ob-title">${t('accounts.offline')}</div>
+        <div class="ob-hint">${t('accounts.offlineLabel')}</div>
+        <div style="display:flex;gap:10px">
+          <input type="text" id="acc-offline-name" placeholder="PlayerName" maxlength="16" style="flex:1"/>
+          <button class="btn" id="acc-offline-add" style="padding:0 22px">${t('accounts.add')}</button>
         </div>
-      </div>
-      <div class="modal-actions"><button class="btn" data-close>${t('common.close')}</button></div>`;
+      </div>`;
   };
 
-  const m = modal(renderBody());
+  const m = modalShell(t('accounts.title'), renderBody(), { cls: 'narrow' });
   const bind = () => {
     $('#acc-ms', m.el).addEventListener('click', async (e) => {
-      e.target.disabled = true;
-      e.target.textContent = t('accounts.signingIn');
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = `${ICONS.spin}${t('accounts.signingIn')}`;
       try {
         await api('accounts:addMicrosoft');
         await refreshAccounts();
@@ -858,8 +1179,7 @@ function accountsModal() {
         toast(t('accounts.signedIn'), 'success');
       } catch (err) {
         toast(err.message, 'error');
-        e.target.disabled = false;
-        e.target.textContent = t('accounts.signin');
+        rerender();
       }
     });
     $('#acc-offline-add', m.el).addEventListener('click', async () => {
@@ -879,29 +1199,24 @@ function accountsModal() {
       renderAccountChip();
       rerender();
     }));
-    $$('[data-close]', m.el).forEach((b) => b.addEventListener('click', m.close));
   };
-  const rerender = () => { $('.modal', m.el).innerHTML = renderBody(); bind(); };
+  const rerender = () => { $('.modal-body', m.el).innerHTML = renderBody(); bind(); };
   bind();
 }
 
 /* ---------------- New instance ---------------- */
 
 async function newInstanceModal() {
-  const m = modal(`
-    <h2>${t('new.title')}</h2>
+  const m = modalShell(t('new.title'), `
     <div class="field"><label>${t('new.name')}</label><input type="text" id="ni-name" placeholder="${t('new.namePlaceholder')}"/></div>
-    <div class="field"><label>${t('new.mcVersion')}</label><select id="ni-mc"><option>${t('common.loading')}</option></select></div>
+    <div class="field"><label>${t('new.mcVersion')}</label><select id="ni-mc" class="mono"><option>${t('common.loading')}</option></select></div>
     <div class="field"><label>${t('new.loader')}</label>
-      <div class="subtabs" id="ni-loaders">
-        ${['vanilla', 'fabric', 'quilt', 'forge', 'neoforge'].map((l, i) => `<button class="subtab ${i === 0 ? 'active' : ''}" data-loader="${l}">${l}</button>`).join('')}
+      <div class="loader-chips" id="ni-loaders">
+        ${['vanilla', 'fabric', 'quilt', 'forge', 'neoforge'].map((l, i) => `<button class="loader-chip ${i === 0 ? 'active' : ''}" data-loader="${l}">${l[0].toUpperCase()}${l.slice(1)}</button>`).join('')}
       </div>
     </div>
-    <div class="field hidden" id="ni-lv-field"><label>${t('new.loaderVersion')}</label><select id="ni-lv"></select></div>
-    <div class="modal-actions">
-      <button class="btn" data-close>${t('common.cancel')}</button>
-      <button class="btn primary" id="ni-create">${t('new.create')}</button>
-    </div>`);
+    <div class="field hidden" id="ni-lv-field"><label>${t('new.loaderVersion')}</label><select id="ni-lv" class="mono"></select></div>
+    <button class="btn gold-big" id="ni-create" style="width:100%;height:48px;margin-top:6px">${t('new.create')}</button>`);
 
   let loader = 'vanilla';
   const mcSel = $('#ni-mc', m.el);
@@ -930,9 +1245,9 @@ async function newInstanceModal() {
     }
   };
 
-  $$('#ni-loaders .subtab', m.el).forEach((b) => b.addEventListener('click', () => {
+  $$('#ni-loaders .loader-chip', m.el).forEach((b) => b.addEventListener('click', () => {
     loader = b.dataset.loader;
-    $$('#ni-loaders .subtab', m.el).forEach((x) => x.classList.toggle('active', x === b));
+    $$('#ni-loaders .loader-chip', m.el).forEach((x) => x.classList.toggle('active', x === b));
     loadLoaderVersions();
   }));
   mcSel.addEventListener('change', loadLoaderVersions);
@@ -961,56 +1276,59 @@ async function newInstanceModal() {
 /* ---------------- Import pack ---------------- */
 
 function importModal() {
-  const m = modal(`
-    <h2>${t('import.title')}</h2>
+  const m = modalShell(t('import.title'), `
     <div class="subtabs">
       ${[['file', t('import.fromFile')], ['modrinth', t('import.modrinth')], ['github', t('import.github')], ['curseforge', t('import.curseforge')], ['url', t('import.url')]]
         .map(([k, label], i) => `<button class="subtab ${i === 0 ? 'active' : ''}" data-sub="${k}">${label}</button>`).join('')}
     </div>
-    <div id="import-body"></div>
-    <div class="modal-actions"><button class="btn" data-close>${t('common.cancel')}</button></div>`);
+    <div id="import-body"></div>`, { cls: 'wide' });
 
   const body = $('#import-body', m.el);
   let sub = 'file';
 
+  const fetchRow = (id, label, placeholder, mono = true) => `
+    <div class="field"><label>${label}</label>
+      <div style="display:flex;gap:10px">
+        <input type="text" ${mono ? 'class="mono"' : ''} id="${id}" placeholder="${placeholder}" style="flex:1"/>
+        <button class="btn gold" id="${id}-go" style="padding:0 22px">${t('import.fetch')}</button>
+      </div>
+    </div>`;
+
   const renderSub = () => {
     if (sub === 'file') {
       body.innerHTML = `
-        <p class="muted">${t('import.fileHint')}</p>
-        <div class="mt"><button class="btn primary" id="imp-pick">${t('import.choose')}</button></div>`;
+        <div class="drop-zone" id="imp-pick">
+          <div class="dz-icon">${ICONS.download}</div>
+          <div class="dz-title">${t('import.drop')}</div>
+          <div class="dz-sub">${t('import.dropSub')}</div>
+        </div>`;
       $('#imp-pick', body).addEventListener('click', async () => {
         const file = await api('packs:pickFile');
         if (file) startImport({ type: 'file', path: file }, m);
       });
     } else if (sub === 'url') {
-      body.innerHTML = `
-        <div class="field"><label>${t('import.urlLabel')}</label><input type="text" id="imp-url" placeholder="https://…/pack.mrpack"/></div>
-        <button class="btn primary" id="imp-url-go">${t('import.import')}</button>`;
+      body.innerHTML = fetchRow('imp-url', t('import.urlLabel'), 'https://…/pack.mrpack');
       $('#imp-url-go', body).addEventListener('click', () => {
         const url = $('#imp-url', body).value.trim();
         if (url) startImport({ type: 'url', url }, m);
       });
     } else if (sub === 'github') {
-      body.innerHTML = `
-        <p class="muted">${t('import.ghHint')}</p>
-        <div class="field mt"><label>${t('import.repo')}</label><input type="text" id="imp-gh" placeholder="username/modpack-repo"/></div>
-        <button class="btn primary" id="imp-gh-go">${t('import.ghGo')}</button>`;
+      body.innerHTML = `<p class="muted" style="margin-bottom:14px;font-size:13px;line-height:1.5">${t('import.ghHint')}</p>` +
+        fetchRow('imp-gh', t('import.repo'), 'username/modpack-repo');
       $('#imp-gh-go', body).addEventListener('click', () => {
         const repo = $('#imp-gh', body).value.trim();
         if (repo) startImport({ type: 'github-releases', repo }, m);
       });
     } else if (sub === 'curseforge') {
-      body.innerHTML = `
-        <p class="muted">${t('import.cfHint')}</p>
-        <div class="field mt"><label>${t('import.cfLabel')}</label><input type="text" id="imp-cf" placeholder="e.g. 715572"/></div>
-        <button class="btn primary" id="imp-cf-go">${t('import.cfGo')}</button>`;
+      body.innerHTML = `<p class="muted" style="margin-bottom:14px;font-size:13px;line-height:1.5">${t('import.cfHint')}</p>` +
+        fetchRow('imp-cf', t('import.cfLabel'), '715572');
       $('#imp-cf-go', body).addEventListener('click', () => {
         const project = $('#imp-cf', body).value.trim();
         if (project) startImport({ type: 'curseforge', project }, m);
       });
     } else if (sub === 'modrinth') {
       body.innerHTML = `
-        <div class="toolbar"><input type="text" id="imp-mr-q" placeholder="${t('import.searchPacks')}"/><button class="btn" id="imp-mr-go">${t('common.search')}</button></div>
+        <div class="search-box" style="margin-bottom:12px">${ICONS.search}<input type="text" id="imp-mr-q" placeholder="${t('import.searchPacks')}"/></div>
         <div id="imp-mr-results"></div>`;
       const doSearch = async () => {
         const holder = $('#imp-mr-results', body);
@@ -1018,17 +1336,19 @@ function importModal() {
         try {
           const hits = await api('packs:searchModrinth', { query: $('#imp-mr-q', body).value.trim() });
           holder.innerHTML = hits.length ? hits.map((h) => `
-            <div class="result-row">
-              ${h.iconUrl ? `<img src="${esc(h.iconUrl)}" alt=""/>` : '<div class="avatar"></div>'}
+            <div class="result-row" style="border:1px solid var(--line);border-radius:11px;background:var(--panel);margin-bottom:8px">
+              <div class="r-icon">${h.iconUrl ? `<img src="${esc(h.iconUrl)}" alt=""/>` : ''}</div>
               <div class="grow"><b>${esc(h.title)}</b><div class="desc">${esc(h.description)}</div></div>
-              <button class="btn primary" data-mr="${esc(h.projectId)}">${t('import.import')}</button>
+              <span class="dl">${fmtDownloads(h.downloads)}</span>
+              <button class="btn gold" data-mr="${esc(h.projectId)}" style="padding:7px 14px;font-size:12px">${t('group.install')}</button>
             </div>`).join('') : `<p class="muted">${t('common.noResults')}</p>`;
           $$('[data-mr]', holder).forEach((b) => b.addEventListener('click', () => startImport({ type: 'modrinth', project: b.dataset.mr }, m)));
         } catch (err) {
           holder.innerHTML = `<p class="muted">${esc(err.message)}</p>`;
         }
       };
-      $('#imp-mr-go', body).addEventListener('click', doSearch);
+      let debounce = null;
+      $('#imp-mr-q', body).addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(doSearch, 400); });
       $('#imp-mr-q', body).addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
       doSearch();
     }
@@ -1044,7 +1364,7 @@ function importModal() {
 
 async function startImport(ref, parentModal) {
   parentModal?.close();
-  const wait = modal(`<h2>${t('import.preparing')}</h2><p class="muted">${t('import.preparingSub')}</p>`);
+  const wait = waitingModal(t('import.preparing'), t('import.preparingSub'));
   let info;
   try {
     info = await api('packs:beginImport', { ref });
@@ -1057,32 +1377,30 @@ async function startImport(ref, parentModal) {
   installArchiveModal(info, {});
 }
 
-/**
- * Shared phase-2 install modal (used by Import and by Group installs).
- * opts: { name?, extra?, onDone? }
- */
 function installArchiveModal(info, opts = {}) {
   const suggested = opts.name || info.name;
-  const m = modal(`
-    <h2>${t('import.installTitle', { n: esc(suggested) })}</h2>
-    <p class="muted">Minecraft ${esc(info.mcVersion || '?')} · ${esc(info.loader?.type || 'vanilla')} ${esc(info.loader?.version || '')} · v${esc(info.version || '?')}</p>
-    <div class="field mt"><label>${t('import.instanceName')}</label><input type="text" id="pi-name" value="${esc(suggested)}"/></div>
+  const m = modalShell(t('import.installTitle', { n: esc(suggested) }), `
+    <div class="install-summary">
+      <div class="is-icon art-tile" style="background:${artGradient(suggested)}"></div>
+      <div>
+        <div class="is-name">${esc(suggested)}</div>
+        <div class="is-meta">${esc(info.mcVersion || '?')} · ${esc(info.loader?.type || 'vanilla')} ${esc(info.loader?.version || '')} · v${esc(info.version || '?')}</div>
+      </div>
+    </div>
+    <div class="field"><label>${t('import.instanceName')}</label><input type="text" id="pi-name" value="${esc(suggested)}"/></div>
     ${info.optionals?.length ? `
-      <h2 style="font-size:14px">${t('import.optionalPick')}</h2>
+      <div class="field" style="margin-bottom:9px"><label>${t('import.optionalPick')}</label></div>
       ${info.optionals.map((o) => `
-        <div class="check-row"><input type="checkbox" id="opt-${esc(o.path)}" data-opt="${esc(o.path)}"/><label for="opt-${esc(o.path)}">${esc(o.name)}</label></div>`).join('')}
+        <label class="check-row"><input type="checkbox" data-opt="${esc(o.path)}"/><span>${esc(o.name)}</span></label>`).join('')}
     ` : ''}
-    <div class="modal-actions">
-      <button class="btn" data-close>${t('common.cancel')}</button>
-      <button class="btn primary" id="pi-go">${t('import.install')}</button>
+    <div id="pi-slot" style="margin-top:14px">
+      <button class="btn gold-big" id="pi-go" style="width:100%;height:48px">${ICONS.download}${t('import.install')}</button>
     </div>`);
 
   $('#pi-go', m.el).addEventListener('click', async () => {
-    const btn = $('#pi-go', m.el);
-    btn.disabled = true;
-    btn.textContent = t('import.installing');
     const choices = {};
     $$('[data-opt]', m.el).forEach((cb) => { choices[cb.dataset.opt] = cb.checked; });
+    $('#pi-slot', m.el).innerHTML = `<div class="busy-btn"><span class="spin">◌</span>${t('import.installing')}</div>`;
     try {
       const res = await api('packs:completeImport', {
         ticket: info.ticket,
@@ -1097,8 +1415,8 @@ function installArchiveModal(info, opts = {}) {
       toast(t('import.done', { n: res.meta.name, c: res.summary.added }), 'success');
     } catch (err) {
       toast(err.message, 'error', 10000);
-      btn.disabled = false;
-      btn.textContent = t('import.install');
+      $('#pi-slot', m.el).innerHTML = `<button class="btn gold-big" id="pi-go2" style="width:100%;height:48px">${t('import.install')}</button>`;
+      $('#pi-go2', m.el).addEventListener('click', () => $('#pi-go', m.el)?.click());
     }
   });
 }
@@ -1107,7 +1425,7 @@ function installArchiveModal(info, opts = {}) {
 
 async function applyUpdateFlow() {
   const id = state.currentId;
-  const wait = modal(`<h2>${t('up.fetching')}</h2><p class="muted">${t('up.fetchingSub')}</p>`);
+  const wait = waitingModal(t('up.fetching'), t('up.fetchingSub'));
   let up;
   try {
     up = await api('packs:beginUpdate', { id });
@@ -1119,7 +1437,7 @@ async function applyUpdateFlow() {
   wait.close();
 
   const run = async (newChoices) => {
-    const wait2 = modal(`<h2>${t('up.applying')}</h2><p class="muted">${t('up.applyingSub')}</p>`);
+    const wait2 = waitingModal(t('up.applying'), t('up.applyingSub'));
     try {
       const res = await api('packs:completeUpdate', { id, ticket: up.ticket, newChoices });
       wait2.close();
@@ -1136,15 +1454,12 @@ async function applyUpdateFlow() {
   };
 
   if (up.newOptionals?.length) {
-    const m = modal(`
-      <h2>${t('up.title', { v: esc(up.toVersion) })}</h2>
-      <p class="muted">${t('up.newOptionals')}</p>
+    const m = modalShell(t('up.title', { v: esc(up.toVersion) }), `
+      <p class="muted" style="margin-bottom:12px;font-size:13px;line-height:1.5">${t('up.newOptionals')}</p>
       ${up.newOptionals.map((o) => `
-        <div class="check-row"><input type="checkbox" data-opt="${esc(o.path)}"/><label>${esc(o.name)}</label></div>`).join('')}
-      <div class="modal-actions">
-        <button class="btn" data-close>${t('common.cancel')}</button>
-        <button class="btn primary" id="up-go">${t('up.update')}</button>
-      </div>`);
+        <label class="check-row"><input type="checkbox" data-opt="${esc(o.path)}"/><span>${esc(o.name)}</span></label>`).join('')}
+      <button class="btn" id="up-go" style="width:100%;height:48px;margin-top:14px;border:none;background:var(--grad-purple);color:#fff;font:800 15px var(--font-disp);box-shadow:0 6px 18px rgba(169,112,255,.35)">${t('up.update')}</button>`,
+      { cls: 'narrow' });
     $('#up-go', m.el).addEventListener('click', () => {
       const choices = {};
       $$('[data-opt]', m.el).forEach((cb) => { choices[cb.dataset.opt] = cb.checked; });
@@ -1160,16 +1475,12 @@ async function applyUpdateFlow() {
 
 function exportModal() {
   const inst = state.current;
-  const m = modal(`
-    <h2>${t('export.title', { n: esc(inst.name) })}</h2>
-    <div class="field"><label>${t('export.version')}</label>
-      <input type="text" id="ex-version" placeholder="1.0.0" value="${esc(inst.packVersion || '1.0.0')}"/></div>
+  const m = modalShell(t('export.title', { n: esc(inst.name) }), `
+    <div class="field"><label>${t('export.version')}</label><input type="text" class="mono" id="ex-version" placeholder="1.0.0" value="${esc(inst.packVersion || '1.0.0')}"/></div>
     <div class="field"><label>${t('export.summary')}</label><input type="text" id="ex-summary" placeholder="${t('export.summaryPlaceholder')}"/></div>
-    <p class="muted">${t('export.hint')}</p>
-    <div class="modal-actions">
-      <button class="btn" data-close>${t('common.cancel')}</button>
-      <button class="btn primary" id="ex-go">${t('export.go')}</button>
-    </div>`);
+    <div class="info-block" style="margin-bottom:20px">${t('export.hint')}</div>
+    <button class="btn gold-big" id="ex-go" style="width:100%;height:48px">${ICONS.upload}${t('export.go')}</button>`,
+    { cls: 'narrow' });
   $('#ex-go', m.el).addEventListener('click', async () => {
     const btn = $('#ex-go', m.el);
     btn.disabled = true;
@@ -1186,15 +1497,13 @@ function exportModal() {
 
 /* ---------------- Launch ---------------- */
 
-async function playCurrent(join) {
-  const id = state.currentId;
+async function playInstance(id, join, btn) {
   if (!state.accounts.list.length) {
     toast(t('accounts.addFirst'), 'error');
     accountsModal();
     return;
   }
-  const btn = $('#btn-play');
-  if (btn) { btn.disabled = true; btn.textContent = t('inst.launching'); }
+  if (btn) { btn.disabled = true; btn.innerHTML = `${ICONS.spin}${t('inst.launching')}`; }
   state.logs[id] = state.logs[id] || [];
   try {
     await api('launch:play', { id, join });
@@ -1216,12 +1525,18 @@ async function boot() {
   $('#btn-new').addEventListener('click', newInstanceModal);
   $('#btn-import').addEventListener('click', importModal);
   $('#account-chip').addEventListener('click', accountsModal);
-  $('#lu-restart').addEventListener('click', () => api('app:installUpdate').catch((e) => toast(e.message, 'error')));
+  $('#bell-btn').addEventListener('click', () => { state.view = 'news'; render(); });
+  $$('#lang-seg button').forEach((b) => b.addEventListener('click', async () => {
+    state.settings = await api('settings:set', { language: b.dataset.lang });
+    applyLanguage();
+    render();
+  }));
 
   try {
     [state.appInfo, state.settings] = await Promise.all([api('app:info'), api('settings:get')]);
     applyLanguage();
-    $('#brand-version').textContent = `v${state.appInfo.version}`;
+    applyAccent();
+    $('#brand-version').textContent = `v${state.appInfo.version || 'dev'} · ${t('brand.hub')}`;
     await refreshAccounts();
     await refreshInstances();
     await refreshGroup({ announce: true });

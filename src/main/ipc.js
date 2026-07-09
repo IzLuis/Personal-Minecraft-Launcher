@@ -15,6 +15,7 @@ import { searchModrinth } from './packs/modrinth.js';
 import { searchModsForInstance, installModrinthMod, setModOptionalFlag, exportInstanceAsMrpack } from './packs/authoring.js';
 import { getGroupConfig, groupInstallStates, refFromGroupPack } from './group.js';
 import { getAutoUpdater } from './updater.js';
+import { pingServer } from './ping.js';
 
 let settings;
 
@@ -95,6 +96,13 @@ export function registerIpc(getWindow) {
   handle('group:rememberPacks', ({ ids }) => {
     s.set('knownGroupPacks', [...new Set(ids || [])].slice(-200));
     return s.get('knownGroupPacks');
+  });
+
+  // Server status (SLP ping) + clipboard for "copy IP"
+  handle('server:ping', ({ address, port }) => pingServer(String(address), Number(port) || 25565));
+  handle('app:copyText', async ({ text }) => {
+    const { clipboard } = await import('electron');
+    clipboard.writeText(String(text ?? ''));
   });
 
   // Accounts

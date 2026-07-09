@@ -88,6 +88,9 @@ machine in Settings → Group.
 | `title` | Popup/card headline |
 | `pinned` | Keeps it at the top of the News list |
 | `body` | **Markdown** (see below) |
+| `emoji` | Optional — big icon on the card/popup hero (default 📣) |
+| `tag` | Optional — short colored label, e.g. `"server nuevo"`, `"evento"` |
+| `author` | Optional — byline (defaults to the group name) |
 
 ## Announcement Markdown
 

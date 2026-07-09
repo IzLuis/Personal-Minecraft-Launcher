@@ -61,6 +61,9 @@ export function normalizeGroupConfig(raw) {
       title: String(a.title),
       body: String(a.body || ''),
       pinned: !!a.pinned,
+      emoji: String(a.emoji || '📣').slice(0, 8),
+      tag: String(a.tag || '').slice(0, 24),
+      author: String(a.author || cfg.groupName).slice(0, 40),
     });
   }
   cfg.announcements.sort((x, y) => (y.pinned - x.pinned) || String(y.date).localeCompare(String(x.date)));
