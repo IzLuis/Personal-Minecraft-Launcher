@@ -154,6 +154,9 @@ async function refreshInstances() {
   render();
 }
 
+let lastGroupSnapshot = null;
+const popupShownIds = new Set(); // popped this session (persisted "seen" happens on Got it)
+
 async function refreshGroup({ force = false, announce = false } = {}) {
   try {
     state.group = await api('group:get', { force });
@@ -161,6 +164,11 @@ async function refreshGroup({ force = false, announce = false } = {}) {
     state.group = { config: null, error: err.message };
   }
   const cfg = state.group?.config;
+  const snapshot = JSON.stringify([cfg, state.group?.installs]);
+  const changed = snapshot !== lastGroupSnapshot;
+  const firstLoad = lastGroupSnapshot === null;
+  lastGroupSnapshot = snapshot;
+
   if (cfg && announce) {
     // "New pack!" toasts
     const known = new Set(state.settings.knownGroupPacks || []);
@@ -172,12 +180,33 @@ async function refreshGroup({ force = false, announce = false } = {}) {
       state.settings.knownGroupPacks = cfg.packs.map((p) => p.id);
       api('group:rememberPacks', { ids: state.settings.knownGroupPacks }).catch(() => {});
     }
-    // Announcement popup for unseen items
+    // Announcement popup for unseen items (skip while another modal is open —
+    // they'll pop on the next poll instead of interrupting an install).
     const seen = new Set(state.settings.seenAnnouncements || []);
-    const unseen = cfg.announcements.filter((a) => !seen.has(a.id));
-    if (unseen.length) announcementPopup(unseen);
+    const unseen = cfg.announcements.filter((a) => !seen.has(a.id) && !popupShownIds.has(a.id));
+    if (unseen.length && !$('#modal-root').children.length) {
+      unseen.forEach((a) => popupShownIds.add(a.id));
+      announcementPopup(unseen);
+    }
   }
-  render();
+
+  // Re-render only what's safe: the sidebar always (badges), the main area only
+  // on group-ish views — never wipe a form the user is typing into.
+  if (changed || firstLoad) {
+    renderSidebar();
+    if (['group', 'news', 'library'].includes(state.view)) render();
+  }
+}
+
+function startGroupAutoRefresh() {
+  setInterval(() => refreshGroup({ force: true, announce: true }).catch(() => {}), 3 * 60_000);
+  let lastFocusRefresh = 0;
+  window.addEventListener('focus', () => {
+    if (Date.now() - lastFocusRefresh > 30_000) {
+      lastFocusRefresh = Date.now();
+      refreshGroup({ force: true, announce: true }).catch(() => {});
+    }
+  });
 }
 
 function unseenAnnouncements() {
@@ -1198,9 +1227,8 @@ async function boot() {
     await refreshGroup({ announce: true });
     if (state.group?.config?.packs?.length && !state.instances.length) {
       state.view = 'group';
-    } else if (state.group?.config && state.view === 'library' && state.instances.length === 0) {
-      state.view = 'group';
     }
+    startGroupAutoRefresh();
     render();
   } catch (err) {
     applyLanguage();

@@ -42,6 +42,14 @@ test('group config: rejects non-https discord, non-object config', () => {
   assert.throws(() => normalizeGroupConfig('nope'));
 });
 
+test('group config: forgives doubled-paste discord URLs', () => {
+  const cfg = normalizeGroupConfig({
+    groupName: 'x',
+    discordUrl: 'https://discord.gg/Y5WtKnwEqUhttps://discord.gg/Y5WtKnwEqU',
+  });
+  assert.equal(cfg.discordUrl, 'https://discord.gg/Y5WtKnwEqU');
+});
+
 test('refFromGroupPack maps sources to import refs', () => {
   assert.deepEqual(refFromGroupPack({ source: { type: 'modrinth', project: 'abc' } }), { type: 'modrinth', project: 'abc' });
   assert.deepEqual(refFromGroupPack({ source: { type: 'github-releases', repo: 'a/b' } }), { type: 'github-releases', repo: 'a/b' });

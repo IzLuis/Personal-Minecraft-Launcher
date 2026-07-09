@@ -62,9 +62,11 @@ Open the raw URL in a browser (Settings → Group shows which URL is in use); if
 shows a 404, check the repo is public and the file is on `main`. JSON syntax errors also
 break it — paste the file into a JSON validator.
 
-**Edited the config but friends don't see it** — raw.githubusercontent.com caches for up
-to ~5 minutes; the Refresh button in the Group tab bypasses the cache. Restarting the
-launcher also re-reads it.
+**Edited the config but friends don't see it** — the launcher re-reads the config
+(bypassing GitHub's cache) at startup, every 3 minutes while open, when the window
+regains focus, and when the Refresh button is pressed. If a change still doesn't appear
+after a Refresh, the commit probably didn't land on `main` — check the raw URL in a
+browser.
 
 **Announcement didn't pop up** — each announcement `id` pops once per machine. New post =
 new unique `id`.

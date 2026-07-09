@@ -20,10 +20,14 @@ const CACHE_FILE = () => path.join(cacheDir(), 'group-config.json');
 /** Validate + normalize a raw group config object. Throws on structural problems. */
 export function normalizeGroupConfig(raw) {
   if (!raw || typeof raw !== 'object') throw new Error('Group config is not a JSON object.');
+  // Forgive the classic doubled-paste accident ("https://…https://…"): keep the first URL.
+  let discordUrl = typeof raw.discordUrl === 'string' ? raw.discordUrl.trim() : '';
+  const secondUrl = discordUrl.indexOf('https://', 8);
+  if (secondUrl > 0) discordUrl = discordUrl.slice(0, secondUrl);
   const cfg = {
     configVersion: raw.configVersion ?? 1,
     groupName: String(raw.groupName || 'My Group'),
-    discordUrl: typeof raw.discordUrl === 'string' && /^https:\/\//.test(raw.discordUrl) ? raw.discordUrl : null,
+    discordUrl: /^https:\/\/\S+$/.test(discordUrl) ? discordUrl : null,
     packs: [],
     announcements: [],
   };
@@ -68,12 +72,13 @@ export function normalizeGroupConfig(raw) {
  * the on-disk cache when offline. Returns { config, fromCache, url } or
  * { config: null } when no URL is configured / nothing is reachable.
  */
-export async function getGroupConfig(settings, { force = false } = {}) {
+export async function getGroupConfig(settings, _opts = {}) {
   const url = (settings.get('groupConfigUrl', '') || DEFAULT_GROUP_CONFIG_URL || '').trim();
   if (!url) return { config: null, fromCache: false, url: null };
   try {
-    // Cache-bust so a fresh commit shows up right away (raw.githubusercontent caches ~5 min).
-    const bust = force ? `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}` : url;
+    // Always cache-bust: raw.githubusercontent caches ~5 min and a fresh commit
+    // must show up right away.
+    const bust = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
     const raw = await fetchJson(bust, { 'Cache-Control': 'no-cache' });
     const config = normalizeGroupConfig(raw);
     await fsp.mkdir(path.dirname(CACHE_FILE()), { recursive: true });
