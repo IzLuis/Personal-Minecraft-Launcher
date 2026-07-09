@@ -8,9 +8,21 @@
       "id": "season3",
       "name": "Compas Season 3",
       "description": "Fabric 1.21.1 — magia, tecnología y dungeons.",
-      "source": { "type": "modrinth", "project": "your-modrinth-pack-slug" },
+      "source": { "type": "repo-file", "path": "packs/season3.mrpack" },
+      "version": "1.0",
       "server": { "address": "mc.tuservidor.mx", "port": 25565 },
+      "icon": "https://i.imgur.com/tu-icono.png",
       "recommended": true
+    },
+    {
+      "id": "zip-artesanal",
+      "name": "Pack Artesanal",
+      "description": "Zip hecho a mano con mods y configs (sin manifest).",
+      "source": { "type": "repo-file", "path": "packs/artesanal.zip" },
+      "version": "1.0",
+      "minecraft": "1.21.1",
+      "loader": { "type": "fabric", "version": "0.16.9" },
+      "server": { "address": "mc.tuservidor.mx" }
     }
   ],
 

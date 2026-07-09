@@ -118,11 +118,12 @@ export function registerIpc(getWindow) {
   handle('mc:loaderVersions', ({ loader, mcVersion }) => listLoaderVersions(loader, mcVersion));
 
   // Instances
+  const withIcon = async (i) => ({ ...i, running: isRunning(i.id), iconUrl: await instances.resolveIconUrl(i) });
   handle('instances:list', async () => {
     const list = await instances.listInstances();
-    return list.map((i) => ({ ...i, running: isRunning(i.id) }));
+    return Promise.all(list.map(withIcon));
   });
-  handle('instances:get', async ({ id }) => ({ ...(await instances.readInstance(id)), running: isRunning(id) }));
+  handle('instances:get', async ({ id }) => withIcon(await instances.readInstance(id)));
   handle('instances:create', (opts) => instances.createInstance(opts));
   handle('instances:delete', ({ id }) => instances.deleteInstance(id));
   handle('instances:rename', ({ id, name }) => instances.renameInstance(id, name));

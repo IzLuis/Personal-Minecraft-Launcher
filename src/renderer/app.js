@@ -55,6 +55,12 @@ function artGradient(name) {
   return `linear-gradient(135deg, hsl(${h},52%,46%), hsl(${h2},60%,32%))`;
 }
 
+/** Icon tile: real pack icon when available, gradient art tile otherwise. */
+function artTile(name, iconUrl, cls, inner = '') {
+  if (iconUrl) return `<span class="${cls} art-img"><img src="${esc(iconUrl)}" alt="" loading="lazy"/>${inner}</span>`;
+  return `<span class="${cls} art-tile" style="background:${artGradient(name)}">${inner}</span>`;
+}
+
 function tagPillClass(tag) {
   let h = 0;
   for (const c of String(tag)) h = (h * 7 + c.charCodeAt(0)) % 3;
@@ -287,6 +293,21 @@ async function refreshGroup({ force = false, announce = false } = {}) {
       state.settings.knownGroupPacks = cfg.packs.map((p) => p.id);
       api('group:rememberPacks', { ids: state.settings.knownGroupPacks }).catch(() => {});
     }
+    // Version bumps on installed packs -> "update available" toast (once per version).
+    const knownVers = { ...(state.settings.knownPackVersions || {}) };
+    let versChanged = false;
+    for (const p of cfg.packs) {
+      if (!p.version) continue;
+      const install = state.group?.installs?.[p.id];
+      if (install && install.packVersion !== p.version && knownVers[p.id] !== p.version) {
+        toast(t('group.updToast', { name: p.name, v: p.version }), 'success', 9000);
+      }
+      if (knownVers[p.id] !== p.version) { knownVers[p.id] = p.version; versChanged = true; }
+    }
+    if (versChanged) {
+      state.settings.knownPackVersions = knownVers;
+      api('settings:set', { knownPackVersions: knownVers }).catch(() => {});
+    }
     const seen = new Set(state.settings.seenAnnouncements || []);
     const unseen = cfg.announcements.filter((a) => !seen.has(a.id) && !popupShownIds.has(a.id));
     if (unseen.length && !$('#modal-root').children.length) {
@@ -460,7 +481,7 @@ function renderSidebar() {
   const list = $('#instance-list');
   list.innerHTML = state.instances.map((i) => `
     <button class="instance-item ${state.currentId === i.id && state.view === 'instance' ? 'active' : ''}" data-id="${esc(i.id)}">
-      <span class="art" style="background:${artGradient(i.name)}">${i.running ? '<span class="run-dot"></span>' : ''}</span>
+      ${artTile(i.name, i.iconUrl, 'art', i.running ? '<span class="run-dot"></span>' : '')}
       <span class="grow">
         <span class="ii-name">${esc(i.name)}</span>
         <span class="ii-sub">${esc(i.mc.version)} · ${esc(loaderLabel(i))}</span>
@@ -522,12 +543,14 @@ function renderGroup(main) {
         const install = g.installs?.[p.id];
         const inst = install ? state.instances.find((i) => i.id === install.instanceId) : null;
         const server = serverString(p.server);
+        const iconUrl = p.icon || inst?.iconUrl || null;
+        const updateAvail = install && p.version && install.packVersion !== p.version;
         return `
           <div class="pack-card">
             <div class="strip" style="background:${artGradient(p.name)}"></div>
             <div class="body">
               <div class="head">
-                <div class="p-icon art-tile" style="background:${artGradient(p.name)}"></div>
+                ${artTile(p.name, iconUrl, 'p-icon')}
                 <div style="flex:1;min-width:0">
                   <h3>${esc(p.name)}</h3>${p.recommended ? `<span class="pill star">★ ${t('group.recommended').replace(/^★\s*/, '')}</span>` : ''}
                   ${p.description ? `<div class="desc">${esc(p.description)}</div>` : ''}
@@ -545,7 +568,9 @@ function renderGroup(main) {
                     <span class="installed-tag">${ICONS.check}${t('group.installed')}${install.packVersion ? ` · v${esc(install.packVersion)}` : ''}</span>
                     <div style="flex:1"></div>
                     <button class="btn" data-open="${esc(install.instanceId)}">${t('group.open')}</button>
-                    ${inst && !inst.running ? `<button class="btn play-sm" data-play="${esc(install.instanceId)}">${ICONS.play}${t('inst.play').replace(/^▶\s*/, '')}</button>` : ''}
+                    ${updateAvail
+                      ? `<button class="btn purple" data-update="${esc(install.instanceId)}">${t('group.updateTo', { v: esc(p.version) })}</button>`
+                      : inst && !inst.running ? `<button class="btn play-sm" data-play="${esc(install.instanceId)}">${ICONS.play}${t('inst.play').replace(/^▶\s*/, '')}</button>` : ''}
                   </div>` : `
                   <button class="btn gold-big install-big" data-install="${esc(p.id)}">${ICONS.download}${t('group.install')}</button>`}
               </div>
@@ -557,6 +582,11 @@ function renderGroup(main) {
   $('#grp-refresh').addEventListener('click', () => refreshGroup({ force: true }));
   $$('[data-open]', main).forEach((b) => b.addEventListener('click', () => openInstance(b.dataset.open)));
   $$('[data-play]', main).forEach((b) => b.addEventListener('click', () => playInstance(b.dataset.play, true, b)));
+  $$('[data-update]', main).forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true;
+    await openInstance(b.dataset.update);
+    applyUpdateFlow();
+  }));
   $$('[data-install]', main).forEach((b) => b.addEventListener('click', () => {
     const pack = cfg.packs.find((p) => p.id === b.dataset.install);
     if (pack) installGroupPack(pack);
@@ -581,7 +611,7 @@ async function installGroupPack(pack) {
   wait.close();
   installArchiveModal(info, {
     name: pack.name,
-    extra: { server: pack.server, groupPackId: pack.id },
+    extra: { server: pack.server, groupPackId: pack.id, icon: info.iconUrl || pack.icon || null },
     onDone: () => refreshGroup({}),
   });
 }
@@ -608,7 +638,7 @@ function renderLibrary(main) {
     <div class="lib-grid">
       ${state.instances.map((i) => `
         <div class="lib-card" data-id="${esc(i.id)}">
-          <div class="art" style="background:${artGradient(i.name)}">
+          <div class="art ${i.iconUrl ? 'photo' : ''}" style="${i.iconUrl ? `background-image:url('${esc(i.iconUrl)}')` : `background:${artGradient(i.name)}`}">
             ${i.running ? `<span class="badge-running"><span class="pulse"></span>${t('inst.launching').replace('…', '')}</span>` : ''}
           </div>
           <div class="body">
@@ -656,7 +686,7 @@ function renderInstance(main) {
   main.innerHTML = `
     <button class="btn subtle back-btn" id="btn-back">${ICONS.back}${t('nav.library')}</button>
     <div class="detail-header">
-      <div class="d-icon art-tile" style="background:${artGradient(inst.name)}"></div>
+      ${artTile(inst.name, inst.iconUrl, 'd-icon')}
       <div style="flex:1;min-width:0">
         <div>
           <h1>${esc(inst.name)}</h1>
@@ -1381,7 +1411,7 @@ function installArchiveModal(info, opts = {}) {
   const suggested = opts.name || info.name;
   const m = modalShell(t('import.installTitle', { n: esc(suggested) }), `
     <div class="install-summary">
-      <div class="is-icon art-tile" style="background:${artGradient(suggested)}"></div>
+      ${artTile(suggested, info.iconUrl, 'is-icon')}
       <div>
         <div class="is-name">${esc(suggested)}</div>
         <div class="is-meta">${esc(info.mcVersion || '?')} · ${esc(info.loader?.type || 'vanilla')} ${esc(info.loader?.version || '')} · v${esc(info.version || '?')}</div>
@@ -1401,12 +1431,14 @@ function installArchiveModal(info, opts = {}) {
     const choices = {};
     $$('[data-opt]', m.el).forEach((cb) => { choices[cb.dataset.opt] = cb.checked; });
     $('#pi-slot', m.el).innerHTML = `<div class="busy-btn"><span class="spin">◌</span>${t('import.installing')}</div>`;
+    const extra = { ...(opts.extra || {}) };
+    if (!extra.icon && info.iconUrl) extra.icon = info.iconUrl;
     try {
       const res = await api('packs:completeImport', {
         ticket: info.ticket,
         name: $('#pi-name', m.el).value,
         choices,
-        extra: opts.extra || {},
+        extra,
       });
       m.close();
       await refreshInstances();
@@ -1525,7 +1557,18 @@ async function boot() {
   $('#btn-new').addEventListener('click', newInstanceModal);
   $('#btn-import').addEventListener('click', importModal);
   $('#account-chip').addEventListener('click', accountsModal);
-  $('#bell-btn').addEventListener('click', () => { state.view = 'news'; render(); });
+  let prevViewBeforeNews = 'library';
+  $('#bell-btn').addEventListener('click', () => {
+    if (state.view === 'news' || state.view === 'newsDetail') {
+      // Second click: close news and return where the user was.
+      state.view = state.currentId && prevViewBeforeNews === 'instance' ? 'instance' : prevViewBeforeNews;
+      if (state.view === 'instance' && !state.current) state.view = 'library';
+    } else {
+      prevViewBeforeNews = state.view;
+      state.view = 'news';
+    }
+    render();
+  });
   $$('#lang-seg button').forEach((b) => b.addEventListener('click', async () => {
     state.settings = await api('settings:set', { language: b.dataset.lang });
     applyLanguage();

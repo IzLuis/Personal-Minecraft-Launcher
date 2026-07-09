@@ -2,7 +2,7 @@
 (function () {
   const DICT = {
     en: {
-      'nav.group': 'Group',
+      'nav.group': 'Servers',
       'nav.library': 'Library',
       'nav.news': 'News',
       'nav.settings': 'Settings',
@@ -44,7 +44,7 @@
       'library.welcomeSub': 'Create a vanilla instance for any Minecraft version, or import a modpack.',
       'library.newInstance': '＋ New instance',
       'library.importPack': '⬇ Import modpack',
-      'group.title': 'Group packs',
+      'group.title': 'Modpacks & servers',
       'group.fromCache': 'Offline — showing the last known group info.',
       'group.empty': 'No group packs published yet.',
       'group.install': 'Install',
@@ -228,9 +228,11 @@
       'import.drop': 'Choose a modpack file',
       'import.dropSub': '.mrpack (Modrinth) or CurseForge .zip',
       'import.fetch': 'Fetch',
+      'group.updateTo': 'Update to v{v}',
+      'group.updToast': '{name}: update v{v} is out!',
     },
     es: {
-      'nav.group': 'Grupo',
+      'nav.group': 'Servidores',
       'nav.library': 'Biblioteca',
       'nav.news': 'Noticias',
       'nav.settings': 'Ajustes',
@@ -272,7 +274,7 @@
       'library.welcomeSub': 'Crea una instancia vanilla de cualquier versión de Minecraft, o importa un modpack.',
       'library.newInstance': '＋ Nueva instancia',
       'library.importPack': '⬇ Importar modpack',
-      'group.title': 'Packs del grupo',
+      'group.title': 'Modpacks y servidores',
       'group.fromCache': 'Sin conexión — mostrando la última info conocida del grupo.',
       'group.empty': 'Todavía no hay packs publicados para el grupo.',
       'group.install': 'Instalar',
@@ -456,6 +458,8 @@
       'import.drop': 'Elige un archivo de modpack',
       'import.dropSub': '.mrpack (Modrinth) o .zip de CurseForge',
       'import.fetch': 'Buscar',
+      'group.updateTo': 'Actualizar a v{v}',
+      'group.updToast': '{name}: ¡ya salió la actualización v{v}!',
     },
   };
 

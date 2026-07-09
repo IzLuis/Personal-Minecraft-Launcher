@@ -42,6 +42,35 @@ test('group config: rejects non-https discord, non-object config', () => {
   assert.throws(() => normalizeGroupConfig('nope'));
 });
 
+test('group config: repo-file sources resolve against the config URL; extra fields kept', () => {
+  const cfg = normalizeGroupConfig({
+    groupName: 'x',
+    packs: [
+      {
+        id: 'zip1', name: 'Mi Pack', version: '1.2', minecraft: '1.21.1',
+        loader: { type: 'Fabric', version: '0.16.9' },
+        icon: 'https://example.com/icon.png',
+        source: { type: 'repo-file', path: 'packs/mipack.zip' },
+      },
+      { id: 'noboot', name: 'No base', source: { type: 'repo-file', path: 'x.zip' } },
+    ],
+  }, 'https://raw.githubusercontent.com/IzLuis/izlauncher-config/main/izlauncher.json');
+  assert.equal(cfg.packs[0].source.type, 'url');
+  assert.equal(cfg.packs[0].source.url, 'https://raw.githubusercontent.com/IzLuis/izlauncher-config/main/packs/mipack.zip');
+  assert.equal(cfg.packs[0].version, '1.2');
+  assert.equal(cfg.packs[0].minecraft, '1.21.1');
+  assert.deepEqual(cfg.packs[0].loader, { type: 'fabric', version: '0.16.9' });
+  assert.equal(cfg.packs[0].icon, 'https://example.com/icon.png');
+});
+
+test('group config: repo-file without a config URL is dropped (cannot resolve)', () => {
+  const cfg = normalizeGroupConfig({
+    groupName: 'x',
+    packs: [{ id: 'a', name: 'A', source: { type: 'repo-file', path: 'x.zip' } }],
+  });
+  assert.equal(cfg.packs.length, 0);
+});
+
 test('group config: forgives doubled-paste discord URLs', () => {
   const cfg = normalizeGroupConfig({
     groupName: 'x',
@@ -50,10 +79,14 @@ test('group config: forgives doubled-paste discord URLs', () => {
   assert.equal(cfg.discordUrl, 'https://discord.gg/Y5WtKnwEqU');
 });
 
-test('refFromGroupPack maps sources to import refs', () => {
-  assert.deepEqual(refFromGroupPack({ source: { type: 'modrinth', project: 'abc' } }), { type: 'modrinth', project: 'abc' });
-  assert.deepEqual(refFromGroupPack({ source: { type: 'github-releases', repo: 'a/b' } }), { type: 'github-releases', repo: 'a/b' });
-  assert.deepEqual(refFromGroupPack({ source: { type: 'url', url: 'https://x/p.mrpack' } }), { type: 'url', url: 'https://x/p.mrpack' });
+test('refFromGroupPack maps sources to import refs (with defaults attached)', () => {
+  const mr = refFromGroupPack({ name: 'P', version: '2', source: { type: 'modrinth', project: 'abc' } });
+  assert.equal(mr.type, 'modrinth');
+  assert.equal(mr.project, 'abc');
+  assert.equal(mr.defaults.name, 'P');
+  assert.equal(mr.defaults.version, '2');
+  assert.equal(refFromGroupPack({ source: { type: 'github-releases', repo: 'a/b' } }).repo, 'a/b');
+  assert.equal(refFromGroupPack({ source: { type: 'url', url: 'https://x/p.mrpack' } }).url, 'https://x/p.mrpack');
   assert.throws(() => refFromGroupPack({ source: { type: 'zzz' } }));
 });
 

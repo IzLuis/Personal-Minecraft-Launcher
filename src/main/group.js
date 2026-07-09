@@ -17,8 +17,12 @@ export const DEFAULT_GROUP_CONFIG_URL =
 
 const CACHE_FILE = () => path.join(cacheDir(), 'group-config.json');
 
-/** Validate + normalize a raw group config object. Throws on structural problems. */
-export function normalizeGroupConfig(raw) {
+/**
+ * Validate + normalize a raw group config object. Throws on structural problems.
+ * `configUrl` (the raw URL the config was fetched from) lets "repo-file" sources
+ * resolve relative to the config repo: { type: "repo-file", path: "packs/s3.mrpack" }.
+ */
+export function normalizeGroupConfig(raw, configUrl = '') {
   if (!raw || typeof raw !== 'object') throw new Error('Group config is not a JSON object.');
   // Forgive the classic doubled-paste accident ("https://…https://…"): keep the first URL.
   let discordUrl = typeof raw.discordUrl === 'string' ? raw.discordUrl.trim() : '';
@@ -31,9 +35,14 @@ export function normalizeGroupConfig(raw) {
     packs: [],
     announcements: [],
   };
+  const baseDir = /^https:\/\//.test(configUrl) ? configUrl.replace(/[?#].*$/, '').replace(/\/[^/]*$/, '/') : '';
   for (const p of raw.packs || []) {
     if (!p?.id || !p?.name || !p?.source?.type) continue; // skip malformed entries
-    const src = p.source;
+    let src = p.source;
+    // Files committed to the config repo itself: {"type":"repo-file","path":"packs/x.mrpack"}
+    if ((src.type === 'repo-file' || src.type === 'file') && src.path && baseDir) {
+      src = { type: 'url', url: baseDir + String(src.path).replace(/^\/+/, '') };
+    }
     const okSource =
       (src.type === 'modrinth' && src.project) ||
       (src.type === 'github-releases' && src.repo) ||
@@ -51,6 +60,12 @@ export function normalizeGroupConfig(raw) {
       source: src,
       server,
       recommended: !!p.recommended,
+      // Declared pack version: bump it in the config to push an update to friends.
+      version: p.version != null ? String(p.version) : null,
+      // Required for plain zips (no manifest inside): what to launch it with.
+      minecraft: p.minecraft ? String(p.minecraft) : null,
+      loader: p.loader?.type ? { type: String(p.loader.type).toLowerCase(), version: String(p.loader.version || '') } : null,
+      icon: typeof p.icon === 'string' && /^https:\/\//.test(p.icon) ? p.icon : null,
     });
   }
   for (const a of raw.announcements || []) {
@@ -83,7 +98,7 @@ export async function getGroupConfig(settings, _opts = {}) {
     // must show up right away.
     const bust = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
     const raw = await fetchJson(bust, { 'Cache-Control': 'no-cache' });
-    const config = normalizeGroupConfig(raw);
+    const config = normalizeGroupConfig(raw, url);
     await fsp.mkdir(path.dirname(CACHE_FILE()), { recursive: true });
     await fsp.writeFile(CACHE_FILE(), JSON.stringify(config));
     await syncGroupInstances(config);
@@ -128,11 +143,31 @@ export async function groupInstallStates(config) {
 /** Build an import ref (for sources.beginImport) from a group pack entry. */
 export function refFromGroupPack(pack) {
   const src = pack.source;
+  const defaults = packDefaults(pack);
   switch (src.type) {
-    case 'modrinth': return { type: 'modrinth', project: src.project };
-    case 'github-releases': return { type: 'github-releases', repo: src.repo };
-    case 'curseforge': return { type: 'curseforge', project: src.project };
-    case 'url': return { type: 'url', url: src.url };
+    case 'modrinth': return { type: 'modrinth', project: src.project, defaults };
+    case 'github-releases': return { type: 'github-releases', repo: src.repo, defaults };
+    case 'curseforge': return { type: 'curseforge', project: src.project, defaults };
+    case 'url': return { type: 'url', url: src.url, defaults };
     default: throw new Error(`Unknown group pack source: ${src.type}`);
   }
+}
+
+/** Metadata a group pack entry supplies for archives that can't describe themselves. */
+export function packDefaults(pack) {
+  return {
+    name: pack.name,
+    version: pack.version || null,
+    mcVersion: pack.minecraft || null,
+    loader: pack.loader || null,
+    icon: pack.icon || null,
+  };
+}
+
+/** Find the group pack entry an instance was installed from (uses the cached config). */
+export async function groupPackForInstance(inst, settings) {
+  const packId = inst?.source?.groupPackId;
+  if (!packId) return null;
+  const { config } = await getGroupConfig(settings);
+  return config?.packs.find((p) => p.id === packId) || null;
 }

@@ -30,8 +30,38 @@ export function defaultInstance() {
     // Server to quick-join ({address, port} or null). Group packs get this from
     // the group config; anyone can also set it per-instance.
     server: null,
+    // Instance icon: {type:'url', url} (Modrinth/CurseForge/config icon) or
+    // {type:'file'} (.pmcl-icon.png extracted from the pack archive).
+    icon: null,
     settings: { memoryMax: '', memoryMin: '', javaPath: '', jvmArgs: '' },
   };
+}
+
+const iconCache = new Map(); // instanceId -> { mtimeMs, dataUrl }
+
+/** Resolve an instance's icon to something the renderer can show in an <img>. */
+export async function resolveIconUrl(inst) {
+  if (inst.icon?.type === 'url' && /^https:\/\//.test(inst.icon.url || '')) return inst.icon.url;
+  if (inst.icon?.type === 'file') {
+    const file = path.join(instanceDir(inst.id), '.pmcl-icon.png');
+    try {
+      const stat = await fsp.stat(file);
+      const cached = iconCache.get(inst.id);
+      if (cached && cached.mtimeMs === stat.mtimeMs) return cached.dataUrl;
+      if (stat.size > 1024 * 1024) return null;
+      const dataUrl = `data:image/png;base64,${(await fsp.readFile(file)).toString('base64')}`;
+      iconCache.set(inst.id, { mtimeMs: stat.mtimeMs, dataUrl });
+      return dataUrl;
+    } catch { return null; }
+  }
+  return null;
+}
+
+export async function setInstanceIconUrl(id, url) {
+  const inst = await readInstance(id);
+  inst.icon = /^https:\/\//.test(url || '') ? { type: 'url', url } : inst.icon;
+  await writeInstance(inst);
+  return inst.icon;
 }
 
 export async function setInstanceServer(id, address) {

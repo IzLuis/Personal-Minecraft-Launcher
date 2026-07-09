@@ -144,6 +144,10 @@ export async function exportInstanceAsMrpack(instanceId, { version, name, summar
 
   const zip = new AdmZip();
   zip.addFile('modrinth.index.json', Buffer.from(JSON.stringify(index, null, 2)));
+  // Ship the instance icon at the archive root — the importer picks it up.
+  try {
+    zip.addFile('icon.png', await fsp.readFile(path.join(dir, '.pmcl-icon.png')));
+  } catch { /* no icon */ }
   for (const rel of overridePaths) {
     const data = await fsp.readFile(path.join(dir, ...rel.split('/')));
     zip.addFile(`overrides/${rel}`, data);

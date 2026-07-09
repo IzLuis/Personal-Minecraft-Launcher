@@ -70,15 +70,28 @@ machine in Settings → Group.
 | --- | --- |
 | `id` | Stable unique string — **never change it** after friends install (it links their instance to this entry) |
 | `name` / `description` | What friends see |
-| `source` | Where the pack lives (below) |
+| `source` | Where the pack file lives (below) |
+| `version` | **Declared pack version** (e.g. `"1.1"`). When set, it drives updates: bump it and every friend gets an "Update to v1.1" button + toast. Required for `repo-file`/`url` zips |
 | `server` | `{ "address": "...", "port": 25565 }` — the Play button becomes "Play & Join server". Port optional. Changing it here updates every friend's launcher automatically |
+| `minecraft` + `loader` | Only needed for **plain zips** (a zip of `mods/`, `config/`… with no manifest): `"minecraft": "1.21.1", "loader": { "type": "fabric", "version": "0.16.9" }` |
+| `icon` | Optional https URL for the pack icon shown on cards and instances |
 | `recommended` | Shows a ★ badge |
 
 `source` variants:
-- `{ "type": "modrinth", "project": "<slug or id>" }` — your Modrinth-hosted pack; updates follow new Modrinth versions. **This is the flow you wanted: manage the pack on Modrinth, friends get it here.**
-- `{ "type": "github-releases", "repo": "owner/repo" }` — pack distributed as `.mrpack` release assets (see AUTHORING.md)
+- **`{ "type": "repo-file", "path": "packs/mipack.mrpack" }` — a file committed to THIS config repo.**
+  Upload the pack file to the repo (web UI: *Add file → Upload files*), reference it by
+  path, set `version`, commit — friends get it. Works with `.mrpack`, CurseForge zips,
+  and plain zips you built by zipping your `mods/` + `config/` folders.
+- `{ "type": "modrinth", "project": "<slug or id>" }` — Modrinth-hosted pack; without a
+  declared `version`, updates follow new Modrinth versions automatically
+- `{ "type": "github-releases", "repo": "owner/repo" }` — pack distributed as release assets
 - `{ "type": "curseforge", "project": 123456 }` — CurseForge pack by project ID
-- `{ "type": "url", "url": "https://…/pack.mrpack" }` — any static link
+- `{ "type": "url", "url": "https://…/pack.mrpack" }` — any direct https link
+
+> **File size:** GitHub blocks repo files over 100 MB (web uploads over 25 MB need
+> *Add file → Upload files*, not drag-into-editor). Bigger packs: attach the file to a
+> **Release** on this same repo and use its download URL with `"type": "url"` —
+> releases allow up to 2 GB per file.
 
 ### `announcements[]`
 | Field | Meaning |
@@ -106,10 +119,13 @@ blocks, `- lists`, `1. numbered`, `> quotes`, `---` dividers, and:
 Raw HTML is deliberately **not** rendered (it's escaped) so a typo or a pasted snippet
 can never break or hijack the launcher.
 
-## The "new server day" routine
+## The "new server day" routine (repo-hosted packs)
 
-1. Publish the new pack version on Modrinth (or a new `.mrpack` release).
-2. Edit `izlauncher.json` on GitHub: add/adjust the pack entry (id, server address), and
-   add an announcement with the trailer/screenshots.
-3. Commit. Done — friends open IzLauncher, get the popup, see the pack in **Group**, and
-   click **Install** (or **Update**). The Play button takes them straight into the server.
+1. Build/update your pack. Get a file: export a `.mrpack` from the launcher, download
+   from Modrinth/CurseForge, or just zip your `mods/` + `config/` folders.
+2. On this repo: **Add file → Upload files** → drop it under `packs/` → commit.
+3. Edit `izlauncher.json`: point `source.path` at the file, **bump `version`**, adjust
+   the `server` address, and add an announcement with the trailer/screenshots.
+4. Commit. Done — friends open IzLauncher (or it refreshes on its own within 3 min),
+   get the popup, see **Install** or **Update to vX** in the Servers tab, and the Play
+   button drops them straight into the server.

@@ -123,6 +123,44 @@ test('update keeps user-modified files that the pack dropped (orphan warning)', 
   assert.equal(r.summary.removed, 0);
 });
 
+test('plain zip pack: installs with config-declared metadata, extracts icon', async () => {
+  const inst = await createInstance({ name: 'Plain Test', mcVersion: '0.0.0' });
+  const dir = instanceDir(inst.id);
+  const zipPath = path.join(tmpBase, 'plain.zip');
+  const zip = new AdmZip();
+  // Everything wrapped in a single root folder, like a hand-zipped folder would be.
+  zip.addFile('MiPack/mods/somemod.jar', Buffer.from('jar-bytes'));
+  zip.addFile('MiPack/config/settings.toml', Buffer.from('speed=fast'));
+  zip.addFile('MiPack/icon.png', Buffer.from('png-bytes'));
+  zip.writeZip(zipPath);
+
+  const defaults = { name: 'Mi Pack', version: '1.2', mcVersion: '1.21.1', loader: { type: 'fabric', version: '0.16.9' } };
+  const r = await applyPackArchive(inst.id, zipPath, { choices: {}, settings: fakeSettings, defaults });
+  assert.equal(r.meta.version, '1.2');
+
+  const meta = await readInstance(inst.id);
+  assert.equal(meta.mc.version, '1.21.1');
+  assert.deepEqual(meta.loader, { type: 'fabric', version: '0.16.9' });
+  assert.equal(meta.packVersion, '1.2');
+  assert.equal(fs.readFileSync(path.join(dir, 'mods/somemod.jar'), 'utf8'), 'jar-bytes');
+  assert.equal(fs.readFileSync(path.join(dir, 'config/settings.toml'), 'utf8'), 'speed=fast');
+  assert.equal(fs.readFileSync(path.join(dir, '.pmcl-icon.png'), 'utf8'), 'png-bytes');
+  assert.deepEqual(meta.icon, { type: 'file' });
+  assert.ok(!fs.existsSync(path.join(dir, 'icon.png')), 'icon is not dumped into the game dir');
+});
+
+test('plain zip without declared minecraft version is rejected', async () => {
+  const inst = await createInstance({ name: 'Plain NoMeta', mcVersion: '0.0.0' });
+  const zipPath = path.join(tmpBase, 'plain2.zip');
+  const zip = new AdmZip();
+  zip.addFile('mods/a.jar', Buffer.from('x'));
+  zip.writeZip(zipPath);
+  await assert.rejects(
+    applyPackArchive(inst.id, zipPath, { choices: {}, settings: fakeSettings }),
+    /minecraft/
+  );
+});
+
 // adm-zip sanitizes entry names it writes, so craft the attack zip byte-by-byte
 // the way a real malicious archive would look (raw "../" in the entry name).
 function buildRawZip(entries) {

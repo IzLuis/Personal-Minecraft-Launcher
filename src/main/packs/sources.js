@@ -10,6 +10,7 @@ import { latestModrinthPackVersion, getModrinthProject, getModrinthVersions, pri
 import { latestCurseforgePackFile, getCurseforgeProject } from './curseforge.js';
 import { latestGithubRelease } from './github.js';
 import { parseGithubRepo, parseModrinthRef } from './plan.js';
+import { groupPackForInstance, refFromGroupPack, packDefaults } from '../group.js';
 
 async function tempArchivePath(hint) {
   const dir = path.join(cacheDir(), 'pack-archives');
@@ -48,6 +49,7 @@ export async function fetchPackArchive(ref, settings, onStatus = () => {}) {
         source: { type: 'modrinth', projectId: project.id, slug: project.slug, versionId: version.id },
         versionLabel: version.number,
         suggestedName: project.title,
+        iconUrl: project.icon_url || null,
       };
     }
     case 'curseforge': {
@@ -55,7 +57,12 @@ export async function fetchPackArchive(ref, settings, onStatus = () => {}) {
       const projectID = Number(String(ref.project).match(/\d+/)?.[0]);
       if (!projectID) throw new Error('Expected a CurseForge project ID (a number). Find it on the project page sidebar.');
       let title = `CurseForge ${projectID}`;
-      try { title = (await getCurseforgeProject(projectID, settings)).name; } catch { /* keyless */ }
+      let iconUrl = null;
+      try {
+        const project = await getCurseforgeProject(projectID, settings);
+        title = project.name;
+        iconUrl = project.logo?.thumbnailUrl || project.logo?.url || null;
+      } catch { /* keyless */ }
       const file = await latestCurseforgePackFile(projectID, settings);
       onStatus(`Downloading ${file.fileName}…`);
       const dest = await tempArchivePath(file.fileName);
@@ -65,6 +72,7 @@ export async function fetchPackArchive(ref, settings, onStatus = () => {}) {
         source: { type: 'curseforge', projectId: projectID, fileId: file.fileID },
         versionLabel: file.displayName,
         suggestedName: title,
+        iconUrl,
       };
     }
     case 'github-releases': {
@@ -88,18 +96,26 @@ export async function fetchPackArchive(ref, settings, onStatus = () => {}) {
 
 /**
  * Phase 1 of an import: fetch + inspect. Returns pack metadata, optional-file list,
- * and a ticket (the cached archive) for phase 2.
+ * and a ticket (the cached archive) for phase 2. `ref.defaults` (from a group pack
+ * entry) supplies name/version/mc/loader/icon for archives that can't self-describe.
  */
 export async function beginImport(ref, settings, onStatus) {
+  const defaults = ref.defaults || {};
   const fetched = await fetchPackArchive(ref, settings, onStatus);
-  const info = await inspectPackArchive(fetched.zipPath, settings);
+  const info = await inspectPackArchive(fetched.zipPath, settings, defaults);
   return {
-    ticket: { zipPath: fetched.zipPath, source: fetched.source, versionLabel: fetched.versionLabel },
-    name: fetched.suggestedName || info.name,
-    version: fetched.versionLabel || info.version,
+    ticket: {
+      zipPath: fetched.zipPath,
+      source: fetched.source,
+      versionLabel: defaults.version || fetched.versionLabel,
+      defaults,
+    },
+    name: defaults.name || fetched.suggestedName || info.name,
+    version: defaults.version || fetched.versionLabel || info.version,
     mcVersion: info.mcVersion,
     loader: info.loader,
     optionals: info.optionals,
+    iconUrl: fetched.iconUrl || defaults.icon || null,
   };
 }
 
@@ -118,12 +134,14 @@ export async function completeImport({ ticket, name, choices = {}, extra = {} },
       choices,
       settings,
       source: ticket.source,
+      defaults: ticket.defaults || {},
       ...events,
     });
     const updated = await readInstance(inst.id);
     if (ticket.versionLabel) updated.packVersion = ticket.versionLabel;
     if (extra.server) updated.server = extra.server;
     if (extra.groupPackId) updated.source = { ...updated.source, groupPackId: extra.groupPackId };
+    if (extra.icon && /^https:\/\//.test(extra.icon)) updated.icon = { type: 'url', url: extra.icon };
     await writeInstance(updated);
     return { instanceId: inst.id, summary, meta };
   } catch (err) {
@@ -138,7 +156,28 @@ export async function checkForUpdate(instanceId, settings) {
   const inst = await readInstance(instanceId);
   const src = inst.source || { type: 'none' };
   const current = inst.packVersion;
-  switch (src.type) {
+
+  // Group-managed instances: a declared "version" in izlauncher.json wins over
+  // source-native checks — bumping it is how the owner pushes an update,
+  // whatever the pack's format or host.
+  const groupPack = await groupPackForInstance(inst, settings).catch(() => null);
+  if (groupPack?.version) {
+    return {
+      available: groupPack.version !== current,
+      current,
+      latest: groupPack.version,
+      ref: refFromGroupPack(groupPack),
+    };
+  }
+  const groupDefaults = groupPack ? packDefaults(groupPack) : null;
+  const withDefaults = (result) => {
+    if (groupDefaults && result.ref) result.ref = { ...result.ref, defaults: groupDefaults };
+    return result;
+  };
+  return withDefaults(await nativeCheck());
+
+  async function nativeCheck() {
+    switch (src.type) {
     case 'modrinth': {
       const latest = await latestModrinthPackVersion(src.projectId);
       return {
@@ -176,6 +215,7 @@ export async function checkForUpdate(instanceId, settings) {
     }
     default:
       return { available: false, current, latest: current, ref: null, unmanaged: true };
+    }
   }
 }
 
@@ -187,17 +227,23 @@ export async function beginUpdate(instanceId, settings, onStatus) {
   const inst = await readInstance(instanceId);
   const check = await checkForUpdate(instanceId, settings);
   if (!check.ref) throw new Error('This instance has no update source.');
+  const defaults = check.ref.defaults || {};
   const fetched = check.prefetchedZip
     ? { zipPath: check.prefetchedZip, source: inst.source, versionLabel: check.latest }
     : await fetchPackArchive(check.ref, settings, onStatus);
-  const info = await inspectPackArchive(fetched.zipPath, settings);
+  const info = await inspectPackArchive(fetched.zipPath, settings, defaults);
   const known = inst.optionalChoices || {};
   const newOptionals = info.optionals.filter((o) => !(o.path in known));
   return {
-    ticket: { zipPath: fetched.zipPath, source: fetched.source, versionLabel: fetched.versionLabel },
+    ticket: {
+      zipPath: fetched.zipPath,
+      source: fetched.source,
+      versionLabel: defaults.version || fetched.versionLabel,
+      defaults,
+    },
     name: inst.name,
     fromVersion: inst.packVersion,
-    toVersion: fetched.versionLabel || info.version,
+    toVersion: defaults.version || fetched.versionLabel || info.version,
     newOptionals,
   };
 }
@@ -210,6 +256,7 @@ export async function completeUpdate(instanceId, { ticket, newChoices = {} }, se
     choices,
     settings,
     source: ticket.source,
+    defaults: ticket.defaults || {},
     ...events,
   });
   const updated = await readInstance(instanceId);

@@ -129,6 +129,8 @@ a:hover { color: #c9a6ff; }
 .instance-item .art {
   position: relative; width: 26px; height: 26px; flex: none; border-radius: 7px;
 }
+.instance-item .art.art-img, .instance-item .art.art-tile { width: 26px; height: 26px; border-radius: 7px; }
+.instance-item .art-img img { image-rendering: auto; }
 .instance-item .art .run-dot {
   position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%;
   background: var(--green); border: 2px solid #0c0d12; animation: livePulse 2s infinite;
@@ -225,8 +227,12 @@ a:hover { color: #c9a6ff; }
 #main { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 26px 28px 34px; }
 
 /* ================= Shared bits ================= */
-.art-tile { position: relative; border-radius: 12px; overflow: hidden; }
+.art-tile { position: relative; border-radius: 12px; overflow: hidden; display: inline-block; }
 .art-tile::after { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.12) 0 9px, transparent 9px 18px); }
+.art-img { position: relative; border-radius: 12px; overflow: hidden; display: inline-flex; background: var(--card); border: 1px solid var(--line); }
+.art-img img { width: 100%; height: 100%; object-fit: cover; }
+.lib-card .art.photo { background-size: cover; background-position: center; }
+.lib-card .art.photo::after { background-image: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(8,9,13,.55)); }
 
 .pill {
   padding: 3px 10px; border-radius: 20px; background: var(--card); border: 1px solid var(--line);

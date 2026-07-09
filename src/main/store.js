@@ -53,4 +53,5 @@ export const SETTINGS_DEFAULTS = {
   groupConfigUrl: '',      // empty = baked-in DEFAULT_GROUP_CONFIG_URL
   seenAnnouncements: [],   // announcement ids already shown
   knownGroupPacks: [],     // pack ids already seen (for "new pack!" toasts)
+  knownPackVersions: {},   // pack id -> last version we toasted about
 };

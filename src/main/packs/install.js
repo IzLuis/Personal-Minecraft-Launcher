@@ -15,53 +15,108 @@ import { loaderFromMrpackDependencies, loaderFromCurseforgeId } from '../loaders
 import { readInstance, writeInstance } from '../instances.js';
 import { resolveCurseforgeFiles } from './curseforge.js';
 
+// Game-content directories we recognize at the root of a "plain" zip (a zip of
+// game files with no Modrinth/CurseForge manifest — e.g. hand-built by the owner).
+const PLAIN_DIRS = new Set(['mods', 'config', 'defaultconfigs', 'kubejs', 'scripts', 'resourcepacks', 'shaderpacks', 'datapacks', 'saves', 'global_packs', 'structures']);
+
 /** Detect archive kind and parse its manifest. Returns a normalized "pack archive" object. */
 export function openPackArchive(zipPath) {
   const zip = new AdmZip(zipPath);
-  const mrIndex = zip.getEntry('modrinth.index.json');
+  const entries = zip.getEntries().filter((e) => !e.isDirectory);
+  // Manifests at the zip root, or one level down when the zip wraps a single folder.
+  const findEntry = (filename) => entries.find((e) => {
+    const name = e.entryName.replace(/\\/g, '/');
+    return name === filename || (name.endsWith(`/${filename}`) && name.split('/').length === 2);
+  });
+  const mrIndex = findEntry('modrinth.index.json');
   if (mrIndex) {
     const index = JSON.parse(zip.readAsText(mrIndex));
-    return { kind: 'mrpack', zip, index };
+    const root = mrIndex.entryName.replace(/\\/g, '/').slice(0, -'modrinth.index.json'.length);
+    return { kind: 'mrpack', zip, index, root };
   }
-  const cfManifest = zip.getEntry('manifest.json');
+  const cfManifest = findEntry('manifest.json');
   if (cfManifest) {
     const manifest = parseCurseforgeManifest(JSON.parse(zip.readAsText(cfManifest)));
-    return { kind: 'curseforge', zip, manifest };
+    const root = cfManifest.entryName.replace(/\\/g, '/').slice(0, -'manifest.json'.length);
+    return { kind: 'curseforge', zip, manifest, root };
   }
-  throw new Error('Unrecognized modpack file (expected a Modrinth .mrpack or CurseForge zip).');
+  // Plain zip: game folders at the root, or inside a single top-level folder.
+  const names = entries.map((e) => e.entryName.replace(/\\/g, '/'));
+  const firstSegs = new Set(names.map((n) => n.split('/')[0]));
+  if ([...firstSegs].some((s) => PLAIN_DIRS.has(s))) {
+    return { kind: 'plain', zip, root: '' };
+  }
+  if (firstSegs.size === 1) {
+    const root = `${[...firstSegs][0]}/`;
+    const secondSegs = new Set(names.filter((n) => n.startsWith(root) && n.slice(root.length).includes('/')).map((n) => n.slice(root.length).split('/')[0]));
+    if ([...secondSegs].some((s) => PLAIN_DIRS.has(s))) {
+      return { kind: 'plain', zip, root };
+    }
+  }
+  throw new Error('Unrecognized modpack file (expected a Modrinth .mrpack, a CurseForge zip, or a zip containing mods/config folders).');
 }
 
 /** Read override entries (rel path -> Buffer) from a pack archive. */
 function readOverrides(archive) {
-  const prefixes = archive.kind === 'mrpack' ? ['overrides/', 'client-overrides/'] : [`${archive.manifest.overridesDir.replace(/\/+$/, '')}/`];
+  const root = archive.root || '';
+  const prefixes =
+    archive.kind === 'mrpack' ? [`${root}overrides/`, `${root}client-overrides/`]
+      : archive.kind === 'curseforge' ? [`${root}${archive.manifest.overridesDir.replace(/\/+$/, '')}/`]
+        : [root]; // plain: everything in the zip is game content
   const out = new Map(); // rel -> Buffer (later prefixes win: client-overrides beat overrides)
   for (const prefix of prefixes) {
     for (const entry of archive.zip.getEntries()) {
       if (entry.isDirectory) continue;
       const name = entry.entryName.replace(/\\/g, '/');
-      if (!name.startsWith(prefix)) continue;
+      if (prefix && !name.startsWith(prefix)) continue;
       const rel = name.slice(prefix.length);
-      if (!rel) continue;
+      if (!rel || rel === 'icon.png') continue; // pack icon is handled separately
+      if (archive.kind === 'plain' && !PLAIN_DIRS.has(rel.split('/')[0]) && rel.includes('/')) continue;
       out.set(rel, entry.getData());
     }
   }
   return out;
 }
 
+/** Extract the pack's icon (icon.png at archive root or in overrides), if any. */
+function readPackIcon(archive) {
+  const root = archive.root || '';
+  for (const candidate of [`${root}icon.png`, `${root}overrides/icon.png`, 'icon.png']) {
+    const entry = archive.zip.getEntry(candidate);
+    if (entry && !entry.isDirectory) {
+      const data = entry.getData();
+      if (data.length > 0 && data.length <= 1024 * 1024) return data;
+    }
+  }
+  return null;
+}
+
 /**
  * Inspect a pack archive without installing: metadata + optional files needing a choice.
+ * `defaults` (from a group config pack entry) fills in what the archive can't say —
+ * required for plain zips, which carry no manifest.
  */
-export async function inspectPackArchive(zipPath, settings) {
+export async function inspectPackArchive(zipPath, settings, defaults = {}) {
   const archive = openPackArchive(zipPath);
   if (archive.kind === 'mrpack') {
     const deps = archive.index.dependencies || {};
     return {
       kind: 'mrpack',
-      name: archive.index.name || 'Modpack',
-      version: String(archive.index.versionId ?? '0'),
+      name: archive.index.name || defaults.name || 'Modpack',
+      version: String(archive.index.versionId ?? defaults.version ?? '0'),
       mcVersion: deps.minecraft,
       loader: loaderFromMrpackDependencies(deps),
       optionals: listMrpackOptionals(archive.index),
+    };
+  }
+  if (archive.kind === 'plain') {
+    return {
+      kind: 'plain',
+      name: defaults.name || 'Modpack',
+      version: String(defaults.version ?? '0'),
+      mcVersion: defaults.mcVersion || null,
+      loader: defaults.loader || { type: 'vanilla', version: '' },
+      optionals: [],
     };
   }
   const m = archive.manifest;
@@ -80,10 +135,25 @@ export async function inspectPackArchive(zipPath, settings) {
  * Compute the desired file map (remote + overrides) for a pack archive.
  * Returns { desired, overrides, meta:{name,version,mcVersion,loader}, optionalCatalog }
  */
-async function buildDesired(archive, choices, settings) {
+async function buildDesired(archive, choices, settings, defaults = {}) {
   let desired = {};
   let optionalCatalog = {};
   let meta;
+  if (archive.kind === 'plain') {
+    if (!defaults.mcVersion) {
+      throw new Error(
+        'This zip has no modpack manifest, so the pack entry must declare "minecraft" (and "loader") in the group config.'
+      );
+    }
+    meta = {
+      name: defaults.name || 'Modpack',
+      version: String(defaults.version ?? '0'),
+      mcVersion: defaults.mcVersion,
+      loader: defaults.loader || { type: 'vanilla', version: '' },
+    };
+    const overrides = readOverrides(archive);
+    return { desired, overrides, meta, optionalCatalog };
+  }
   if (archive.kind === 'mrpack') {
     const { files } = planFilesFromMrpackIndex(archive.index, choices);
     desired = files;
@@ -143,11 +213,11 @@ function diskState(instDir, rel) {
  * Install or update a pack archive into an instance. This is the one write-path
  * for imports AND updates.
  */
-export async function applyPackArchive(instanceId, zipPath, { choices = {}, settings, source, onStatus = () => {}, onProgress = () => {} } = {}) {
+export async function applyPackArchive(instanceId, zipPath, { choices = {}, settings, source, defaults = {}, onStatus = () => {}, onProgress = () => {} } = {}) {
   const inst = await readInstance(instanceId);
   const archive = openPackArchive(zipPath);
   onStatus('Resolving pack files…');
-  const { desired, overrides, meta, optionalCatalog } = await buildDesired(archive, choices, settings);
+  const { desired, overrides, meta, optionalCatalog } = await buildDesired(archive, choices, settings, defaults);
   const instDir = instanceDir(instanceId);
 
   // Overrides join the desired set with their content hash so they diff like everything else.
@@ -238,14 +308,22 @@ export async function applyPackArchive(instanceId, zipPath, { choices = {}, sett
     await fsp.writeFile(dest, buf);
   }
 
-  // 4) Record the new pack state on the instance.
+  // 4) Pack icon: icon.png embedded in the archive becomes the instance icon
+  //    (unless an explicit URL icon was already attached).
+  const iconData = readPackIcon(archive);
+  if (iconData && inst.icon?.type !== 'url') {
+    await fsp.writeFile(path.join(instDir, '.pmcl-icon.png'), iconData);
+    inst.icon = { type: 'file' };
+  }
+
+  // 5) Record the new pack state on the instance.
   inst.packFiles = fullDesired;
   inst.optionalCatalog = optionalCatalog;
   inst.optionalChoices = { ...Object.fromEntries(Object.keys(optionalCatalog).map((k) => [k, !!choices[k]])) };
   inst.packVersion = meta.version;
   inst.mc.version = meta.mcVersion;
   inst.loader = meta.loader.type === 'vanilla' && inst.loader.type !== 'vanilla' ? inst.loader : meta.loader;
-  if (source) inst.source = { ...source };
+  if (source) inst.source = { ...(inst.source?.groupPackId ? { groupPackId: inst.source.groupPackId } : {}), ...source };
   if (!inst.name) inst.name = meta.name;
   await writeInstance(inst);
   return { summary, meta };
