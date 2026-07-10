@@ -1142,6 +1142,7 @@ function renderGlobalSettings(main) {
           <button class="btn" id="gs-open-data">${t('settings.openData')}</button>
           <button class="btn" id="gs-open-exports">${t('settings.openExports')}</button>
           <button class="btn" id="gs-check-update">${t('settings.checkUpdates')}</button>
+          <button class="btn" id="gs-tutorial">🎓 ${t('settings.viewTutorial')}</button>
         </div>
       </section>
 
@@ -1186,6 +1187,7 @@ function renderGlobalSettings(main) {
   });
   $('#gs-open-data').addEventListener('click', () => api('app:openPath', { target: 'data' }));
   $('#gs-open-exports').addEventListener('click', () => api('app:openPath', { target: 'exports' }));
+  $('#gs-tutorial').addEventListener('click', startTutorial);
   $('#gs-check-update').addEventListener('click', async (e) => {
     e.target.disabled = true;
     try {
@@ -1556,6 +1558,152 @@ function exportModal() {
   });
 }
 
+/* ---------------- First-launch tutorial ---------------- */
+
+const TUTORIAL_STEPS = [
+  { key: 'welcome' },
+  { key: 'account', target: '#account-chip' },
+  { key: 'servers', target: '[data-nav="group"]' },
+  { key: 'library', target: '[data-nav="library"]' },
+  { key: 'updates' },
+  { key: 'news', target: '#bell-btn' },
+  { key: 'settings', target: '#lang-seg' },
+  { key: 'finish' },
+];
+
+let tutorialState = null; // { idx, overlay }
+
+function startTutorial() {
+  if (tutorialState) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'tutorial-overlay';
+  overlay.innerHTML = '<div class="tut-spot"></div><div class="tut-card"></div>';
+  document.body.appendChild(overlay);
+  tutorialState = { idx: 0, overlay };
+  const onResize = () => renderTutorialStep();
+  const onKey = (e) => {
+    if (e.key === 'Escape') endTutorial();
+    if (e.key === 'ArrowRight' || e.key === 'Enter') tutorialGo(1);
+    if (e.key === 'ArrowLeft') tutorialGo(-1);
+  };
+  tutorialState.cleanup = () => {
+    window.removeEventListener('resize', onResize);
+    document.removeEventListener('keydown', onKey);
+  };
+  window.addEventListener('resize', onResize);
+  document.addEventListener('keydown', onKey);
+  renderTutorialStep();
+}
+
+function endTutorial() {
+  if (!tutorialState) return;
+  tutorialState.cleanup?.();
+  tutorialState.overlay.remove();
+  tutorialState = null;
+  if (!state.settings.tutorialDone) {
+    state.settings.tutorialDone = true;
+    api('settings:set', { tutorialDone: true }).catch(() => {});
+  }
+}
+
+function tutorialGo(delta) {
+  if (!tutorialState) return;
+  const next = tutorialState.idx + delta;
+  if (next < 0) return;
+  if (next >= TUTORIAL_STEPS.length) return endTutorial();
+  tutorialState.idx = next;
+  renderTutorialStep();
+}
+
+async function tutorialSetLang(lang) {
+  state.settings = (await api('settings:set', { language: lang }).catch(() => null)) || { ...state.settings, language: lang };
+  applyLanguage();
+  render();
+  renderTutorialStep();
+}
+
+function renderTutorialStep() {
+  if (!tutorialState) return;
+  const { overlay, idx } = tutorialState;
+  const step = TUTORIAL_STEPS[idx];
+  const spot = $('.tut-spot', overlay);
+  const card = $('.tut-card', overlay);
+  const target = step.target ? document.querySelector(step.target) : null;
+  const lang = I18N.getLang();
+
+  // Spotlight: a cutout over the target; without one, dim everything evenly.
+  if (target) {
+    const r = target.getBoundingClientRect();
+    const pad = 6;
+    spot.style.display = 'block';
+    spot.style.left = `${r.left - pad}px`;
+    spot.style.top = `${r.top - pad}px`;
+    spot.style.width = `${r.width + pad * 2}px`;
+    spot.style.height = `${r.height + pad * 2}px`;
+  } else {
+    spot.style.display = 'block';
+    spot.style.left = '50%';
+    spot.style.top = '50%';
+    spot.style.width = '0px';
+    spot.style.height = '0px';
+  }
+
+  card.innerHTML = `
+    <div class="tut-head">
+      <span class="tut-step">${t('tut.stepOf', { a: idx + 1, b: TUTORIAL_STEPS.length })}</span>
+      <div class="lang-seg tut-lang">
+        <button data-tlang="en" class="${lang === 'en' ? 'active' : ''}">EN</button>
+        <button data-tlang="es" class="${lang === 'es' ? 'active' : ''}">ES</button>
+      </div>
+    </div>
+    ${step.key === 'welcome' ? '<img class="tut-apple" src="icon.png" alt=""/>' : ''}
+    <h3>${t(`tut.${step.key}.title`)}</h3>
+    <p>${t(`tut.${step.key}.body`)}</p>
+    <div class="tut-dots">${TUTORIAL_STEPS.map((_, i) => `<span class="${i === idx ? 'on' : ''}"></span>`).join('')}</div>
+    <div class="tut-actions">
+      <button class="link-btn" id="tut-skip">${t('tut.skip')}</button>
+      <div style="flex:1"></div>
+      ${idx > 0 ? `<button class="btn" id="tut-back">${t('tut.back')}</button>` : ''}
+      <button class="btn gold" id="tut-next">${idx === TUTORIAL_STEPS.length - 1 ? t('tut.done') : t('tut.next')}</button>
+    </div>`;
+
+  $$('[data-tlang]', card).forEach((b) => b.addEventListener('click', () => tutorialSetLang(b.dataset.tlang)));
+  $('#tut-skip', card).addEventListener('click', endTutorial);
+  $('#tut-back', card)?.addEventListener('click', () => tutorialGo(-1));
+  $('#tut-next', card).addEventListener('click', () => tutorialGo(1));
+
+  // Position the card: centered without a target; next to the target otherwise.
+  card.style.visibility = 'hidden';
+  card.style.left = '0px';
+  card.style.top = '0px';
+  requestAnimationFrame(() => {
+    const cw = card.offsetWidth;
+    const ch = card.offsetHeight;
+    let left;
+    let top;
+    if (!target) {
+      left = (window.innerWidth - cw) / 2;
+      top = (window.innerHeight - ch) / 2;
+    } else {
+      const r = target.getBoundingClientRect();
+      if (r.top < 90) {
+        // topbar targets: place below, right-aligned to the target
+        left = Math.min(r.right - cw, window.innerWidth - cw - 16);
+        top = r.bottom + 14;
+      } else {
+        // sidebar targets: place to the right
+        left = r.right + 16;
+        top = r.top - 10;
+      }
+      left = Math.max(16, Math.min(left, window.innerWidth - cw - 16));
+      top = Math.max(16, Math.min(top, window.innerHeight - ch - 16));
+    }
+    card.style.left = `${left}px`;
+    card.style.top = `${top}px`;
+    card.style.visibility = 'visible';
+  });
+}
+
 /* ---------------- Launch ---------------- */
 
 async function playInstance(id, join, btn) {
@@ -1599,9 +1747,10 @@ async function boot() {
     render();
   });
   $$('#lang-seg button').forEach((b) => b.addEventListener('click', async () => {
-    state.settings = await api('settings:set', { language: b.dataset.lang });
+    state.settings = (await api('settings:set', { language: b.dataset.lang }).catch(() => null)) || { ...state.settings, language: b.dataset.lang };
     applyLanguage();
     render();
+    if (tutorialState) renderTutorialStep();
   }));
 
   try {
@@ -1617,6 +1766,7 @@ async function boot() {
     }
     startGroupAutoRefresh();
     render();
+    if (!state.settings.tutorialDone) startTutorial();
   } catch (err) {
     applyLanguage();
     toast(t('startup.error', { e: err.message }), 'error', 15000);

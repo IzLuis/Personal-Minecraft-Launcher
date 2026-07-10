@@ -54,4 +54,5 @@ export const SETTINGS_DEFAULTS = {
   seenAnnouncements: [],   // announcement ids already shown
   knownGroupPacks: [],     // pack ids already seen (for "new pack!" toasts)
   knownPackVersions: {},   // pack id -> last version we toasted about
+  tutorialDone: false,     // first-launch tour completed/skipped
 };
