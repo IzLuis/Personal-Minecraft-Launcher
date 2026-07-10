@@ -48,3 +48,5 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.rpm
+            dist/*.yml
+            dist/*.blockmap
