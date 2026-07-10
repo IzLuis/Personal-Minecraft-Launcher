@@ -129,8 +129,7 @@ a:hover { color: #c9a6ff; }
 .instance-item .art {
   position: relative; width: 26px; height: 26px; flex: none; border-radius: 7px;
 }
-.instance-item .art.art-img, .instance-item .art.art-tile { width: 26px; height: 26px; border-radius: 7px; }
-.instance-item .art-img img { image-rendering: auto; }
+.instance-item .art.art-tile { width: 26px; height: 26px; border-radius: 7px; }
 .instance-item .art .run-dot {
   position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%;
   background: var(--green); border: 2px solid #0c0d12; animation: livePulse 2s infinite;
@@ -229,10 +228,29 @@ a:hover { color: #c9a6ff; }
 /* ================= Shared bits ================= */
 .art-tile { position: relative; border-radius: 12px; overflow: hidden; display: inline-block; }
 .art-tile::after { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.12) 0 9px, transparent 9px 18px); }
-.art-img { position: relative; border-radius: 12px; overflow: hidden; display: inline-flex; background: var(--card); border: 1px solid var(--line); }
-.art-img img { width: 100%; height: 100%; object-fit: cover; }
-.lib-card .art.photo { background-size: cover; background-position: center; }
+/* Real icon layered over the gradient+initial placeholder. */
+.tile-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
+.art-tile .run-dot { z-index: 3; }
+.art-tile.has-img::after { z-index: 1; }
+/* Placeholder shown when an icon image fails to load: gradient + initial,
+   scaled to the tile via container-query units. */
+.art-tile { container-type: size; }
+.fb-initial {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-disp); font-weight: 700; font-size: 52cqw;
+  color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+/* Photo layer that sits over a gradient base (Library cards, announcement thumbs). */
+.art-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .lib-card .art.photo::after { background-image: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(8,9,13,.55)); }
+.ann-card .a-icon { position: relative; overflow: hidden; }
+/* Announcement banner image: fills the hero, whatever its dimensions. */
+.hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.news-detail .hero.has-img::after, .popup-hero.has-img::after {
+  background-image: linear-gradient(180deg, rgba(8,9,13,0) 45%, rgba(8,9,13,.55));
+}
+.news-detail .hero .emoji, .popup-hero .emoji { z-index: 1; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
 
 .pill {
   padding: 3px 10px; border-radius: 20px; background: var(--card); border: 1px solid var(--line);

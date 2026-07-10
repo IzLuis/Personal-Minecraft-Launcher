@@ -79,6 +79,8 @@ export function normalizeGroupConfig(raw, configUrl = '') {
       emoji: String(a.emoji || '📣').slice(0, 8),
       tag: String(a.tag || '').slice(0, 24),
       author: String(a.author || cfg.groupName).slice(0, 40),
+      // Banner image for the popup/detail hero (https, shown with object-fit: cover).
+      image: typeof a.image === 'string' && /^https:\/\//.test(a.image) ? a.image : null,
     });
   }
   cfg.announcements.sort((x, y) => (y.pinned - x.pinned) || String(y.date).localeCompare(String(x.date)));

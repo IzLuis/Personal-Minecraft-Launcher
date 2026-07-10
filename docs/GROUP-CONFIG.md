@@ -104,6 +104,7 @@ machine in Settings → Group.
 | `emoji` | Optional — big icon on the card/popup hero (default 📣) |
 | `tag` | Optional — short colored label, e.g. `"server nuevo"`, `"evento"` |
 | `author` | Optional — byline (defaults to the group name) |
+| `image` | Optional — https URL used as the banner behind the popup/detail hero. Any size works (it's cropped to fill). If it fails to load, the gradient + emoji take over |
 
 ## Announcement Markdown
 

@@ -55,11 +55,32 @@ function artGradient(name) {
   return `linear-gradient(135deg, hsl(${h},52%,46%), hsl(${h2},60%,32%))`;
 }
 
-/** Icon tile: real pack icon when available, gradient art tile otherwise. */
+/** Icon tile: gradient + initial always render as the base layer; the real pack
+ *  icon (when present) covers them. A slow or broken image therefore shows the
+ *  placeholder immediately — no blank boxes. */
 function artTile(name, iconUrl, cls, inner = '') {
-  if (iconUrl) return `<span class="${cls} art-img"><img src="${esc(iconUrl)}" alt="" loading="lazy"/>${inner}</span>`;
-  return `<span class="${cls} art-tile" style="background:${artGradient(name)}">${inner}</span>`;
+  const initial = esc((String(name).trim()[0] || '?').toUpperCase());
+  const img = iconUrl ? `<span class="fb-initial">${initial}</span><img class="tile-img" src="${esc(iconUrl)}" alt="" loading="lazy"/>` : '';
+  return `<span class="${cls} art-tile ${iconUrl ? 'has-img' : ''}" style="background:${artGradient(name)}">${img}${inner}</span>`;
 }
+
+/* Broken images degrade gracefully: tile images vanish (placeholder is beneath),
+ * avatars become initials, photo/hero layers disappear (error events only reach
+ * us in the capture phase — they don't bubble). */
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const avatar = img.closest('.avatar[data-fb], .a-avatar[data-fb]');
+  if (avatar) {
+    const name = avatar.dataset.fb || '?';
+    img.remove();
+    avatar.textContent = name.trim().slice(0, 2).toUpperCase() || '?';
+    return;
+  }
+  if (img.classList.contains('tile-img') || img.classList.contains('art-photo') || img.classList.contains('hero-img') || img.closest('.r-icon')) {
+    img.remove(); // the gradient / initial / emoji behind it takes over
+  }
+}, true);
 
 function tagPillClass(tag) {
   let h = 0;
@@ -406,6 +427,7 @@ function updatePingSlots(key, res) {
 
 function renderAccountChip() {
   const active = state.accounts.list.find((a) => a.id === state.accounts.activeId);
+  $('#account-avatar').dataset.fb = active ? active.name : '?';
   $('#account-name').textContent = active ? active.name : t('account.none');
   const status = $('#account-status');
   if (active) {
@@ -638,7 +660,8 @@ function renderLibrary(main) {
     <div class="lib-grid">
       ${state.instances.map((i) => `
         <div class="lib-card" data-id="${esc(i.id)}">
-          <div class="art ${i.iconUrl ? 'photo' : ''}" style="${i.iconUrl ? `background-image:url('${esc(i.iconUrl)}')` : `background:${artGradient(i.name)}`}">
+          <div class="art ${i.iconUrl ? 'photo' : ''}" style="background:${artGradient(i.name)}">
+            ${i.iconUrl ? `<img class="art-photo" src="${esc(i.iconUrl)}" alt="" loading="lazy"/>` : ''}
             ${i.running ? `<span class="badge-running"><span class="pulse"></span>${t('inst.launching').replace('…', '')}</span>` : ''}
           </div>
           <div class="body">
@@ -945,7 +968,7 @@ function annCardHtml(a, unseenSet) {
   const tagCls = tagPillClass(a.tag || 'update');
   return `
     <div class="ann-card ${unseenSet?.has(a.id) ? 'unseen' : ''}" data-ann="${esc(a.id)}">
-      <div class="a-icon" style="background:${artGradient(a.id + a.title)}">${esc(a.emoji || '📣')}</div>
+      <div class="a-icon" style="background:${artGradient(a.id + a.title)}">${esc(a.emoji || '📣')}${a.image ? `<img class="art-photo" src="${esc(a.image)}" alt="" loading="lazy"/>` : ''}</div>
       <div class="grow">
         <div class="tags">
           ${a.tag ? `<span class="pill ${tagCls}">${esc(a.tag)}</span>` : ''}
@@ -988,7 +1011,10 @@ function renderNewsDetail(main) {
   main.innerHTML = `
     <button class="btn subtle back-btn" id="news-back">${ICONS.back}${t('nav.news')}</button>
     <div class="news-detail">
-      <div class="hero" style="background:${artGradient(a.id + a.title)}"><span class="emoji">${esc(a.emoji || '📣')}</span></div>
+      <div class="hero ${a.image ? 'has-img' : ''}" style="background:${artGradient(a.id + a.title)}">
+        ${a.image ? `<img class="hero-img" src="${esc(a.image)}" alt=""/>` : ''}
+        <span class="emoji">${esc(a.emoji || '📣')}</span>
+      </div>
       ${a.tag ? `<span class="pill ${tagCls}">${esc(a.tag)}</span>` : ''}
       <h1>${esc(a.title)}</h1>
       <div class="byline"><span class="a-avatar">${esc((a.author || 'Iz').slice(0, 2))}</span>${esc(a.author || '')} · ${esc(a.date)}</div>
@@ -1000,7 +1026,10 @@ function renderNewsDetail(main) {
 function announcementPopup(unseen) {
   const newest = unseen[0];
   const m = modal(`
-    <div class="popup-hero" style="background:${artGradient(newest.id + newest.title)}"><span class="emoji">${esc(newest.emoji || '📣')}</span></div>
+    <div class="popup-hero ${newest.image ? 'has-img' : ''}" style="background:${artGradient(newest.id + newest.title)}">
+      ${newest.image ? `<img class="hero-img" src="${esc(newest.image)}" alt=""/>` : ''}
+      <span class="emoji">${esc(newest.emoji || '📣')}</span>
+    </div>
     <div class="modal-body">
       ${newest.tag ? `<span class="pill ${tagPillClass(newest.tag)}">${esc(newest.tag)}</span>` : ''}
       <div style="font:800 20px var(--font-disp);letter-spacing:-.01em;margin:12px 0 8px;line-height:1.2">${esc(newest.title)}</div>
@@ -1178,7 +1207,7 @@ function accountsModal() {
     return `
       ${list.length ? list.map((a) => `
         <div class="acct-row">
-          <div class="a-avatar"><img src="https://mc-heads.net/avatar/${encodeURIComponent(a.type === 'msa' ? a.id : a.name)}/80" alt=""/></div>
+          <div class="a-avatar" data-fb="${esc(a.name)}"><img src="https://mc-heads.net/avatar/${encodeURIComponent(a.type === 'msa' ? a.id : a.name)}/80" alt=""/></div>
           <div class="grow"><b>${esc(a.name)}</b><div class="a-type">${a.type === 'msa' ? t('accounts.microsoft') : t('accounts.offline')}</div></div>
           ${a.id === activeId
             ? `<span class="pill active-acct"><span style="width:6px;height:6px;border-radius:50%;background:var(--green)"></span>${t('accounts.active')}</span>`
