@@ -3,3 +3,5 @@ dist/
 *.log
 .DS_Store
 /test-data/
+# Written by CI from the CURSEFORGE_API_KEY secret — never commit a real key.
+src/main/baked.json

@@ -55,4 +55,5 @@ export const SETTINGS_DEFAULTS = {
   knownGroupPacks: [],     // pack ids already seen (for "new pack!" toasts)
   knownPackVersions: {},   // pack id -> last version we toasted about
   tutorialDone: false,     // first-launch tour completed/skipped
+  friends: [],             // Minecraft usernames to watch for on the group servers
 };

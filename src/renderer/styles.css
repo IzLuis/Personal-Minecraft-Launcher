@@ -139,6 +139,25 @@ a:hover { color: #c9a6ff; }
 .instance-item .ii-sub { display: block; font: 500 10px var(--font-mono); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .instance-item .grow { min-width: 0; flex: 1; }
 
+/* Friends panel */
+.friends-head { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.friends-manage {
+  width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--panel2); color: var(--muted); cursor: pointer;
+  font: 700 13px var(--font-body); line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.friends-manage:hover { color: var(--gold); border-color: rgba(230,181,63,.4); }
+.friends-list { max-height: 132px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; margin: 0 -4px; padding: 0 4px; }
+.friend-row { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 9px; }
+.friend-row .f-avatar { width: 22px; height: 22px; border-radius: 6px; flex: none; font-size: 9px; }
+.friend-row .grow { min-width: 0; flex: 1; }
+.friend-row .f-name { display: block; font: 600 12px var(--font-body); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.friend-row.online .f-name { color: var(--text); }
+.friend-row .f-status { display: block; font: 500 9.5px var(--font-mono); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.friend-row.online .f-status { color: var(--green); }
+.friend-row .f-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line2); flex: none; }
+.friend-row .f-dot.on { background: var(--green); animation: livePulse 2s infinite; }
+
 .launcher-update-ready {
   display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 12px;
   border-radius: 12px; background: linear-gradient(90deg, rgba(70,209,127,.14), rgba(70,209,127,.04));

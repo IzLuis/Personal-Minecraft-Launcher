@@ -44,6 +44,8 @@ const state = {
   group: null,
   newsId: null,
   pings: {},                  // "host:port" -> { at, res }
+  friendStatuses: {},         // username -> { serverName } (present = online)
+  friendsSampleHidden: false,
 };
 
 /* ---------------- Small helpers ---------------- */
@@ -345,13 +347,121 @@ async function refreshGroup({ force = false, announce = false } = {}) {
 
 function startGroupAutoRefresh() {
   setInterval(() => refreshGroup({ force: true, announce: true }).catch(() => {}), 3 * 60_000);
+  setInterval(() => refreshFriends().catch(() => {}), 75_000);
   let lastFocusRefresh = 0;
   window.addEventListener('focus', () => {
     if (Date.now() - lastFocusRefresh > 30_000) {
       lastFocusRefresh = Date.now();
       refreshGroup({ force: true, announce: true }).catch(() => {});
+      refreshFriends().catch(() => {});
     }
   });
+}
+
+/* ---------------- Friends (lite) ---------------- */
+
+let friendsFirstLoad = true;
+
+async function refreshFriends() {
+  const friends = state.settings.friends || [];
+  if (!friends.length) {
+    state.friendStatuses = {};
+    renderFriendsPanel();
+    return;
+  }
+  const res = await api('friends:status').catch(() => null);
+  if (!res) return;
+  const prev = state.friendStatuses;
+  state.friendStatuses = res.statuses || {};
+  state.friendsSampleHidden = !!res.sampleHidden;
+  if (!friendsFirstLoad) {
+    for (const [name, st] of Object.entries(state.friendStatuses)) {
+      if (!prev[name]) toast(t('friends.cameOnline', { n: name, s: st.serverName }), 'success', 8000);
+    }
+  }
+  friendsFirstLoad = false;
+  renderFriendsPanel();
+}
+
+function renderFriendsPanel() {
+  const label = $('#friends-label');
+  if (!label) return;
+  label.textContent = t('friends.title').toUpperCase();
+  $('#btn-friends-manage').title = t('friends.manage');
+  const friends = state.settings.friends || [];
+  const list = $('#friends-list');
+  if (!friends.length) {
+    list.innerHTML = '';
+    return;
+  }
+  const sorted = [...friends].sort((a, b) => {
+    const ao = state.friendStatuses[a] ? 0 : 1;
+    const bo = state.friendStatuses[b] ? 0 : 1;
+    return ao - bo || a.localeCompare(b);
+  });
+  list.innerHTML = sorted.map((name) => {
+    const st = state.friendStatuses[name];
+    return `
+      <div class="friend-row ${st ? 'online' : ''}">
+        <span class="avatar f-avatar" data-fb="${esc(name)}"><img src="https://mc-heads.net/avatar/${encodeURIComponent(name)}/48" alt=""/></span>
+        <span class="grow">
+          <span class="f-name">${esc(name)}</span>
+          <span class="f-status">${st ? t('friends.online', { s: esc(st.serverName) }) : t('friends.offline')}</span>
+        </span>
+        <span class="f-dot ${st ? 'on' : ''}"></span>
+      </div>`;
+  }).join('');
+}
+
+function friendsModal() {
+  const renderBody = () => {
+    const friends = state.settings.friends || [];
+    return `
+      <p class="muted" style="font-size:12.5px;line-height:1.5;margin-bottom:14px">${t('friends.hint')}</p>
+      ${state.friendsSampleHidden ? `<div class="warn-block" style="margin-bottom:12px">${t('friends.sampleHidden')}</div>` : ''}
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <input type="text" id="fr-name" placeholder="${t('friends.placeholder')}" maxlength="16" style="flex:1"/>
+        <button class="btn gold" id="fr-add" style="padding:0 20px">${t('friends.add')}</button>
+      </div>
+      ${friends.length ? friends.map((name) => {
+        const st = state.friendStatuses[name];
+        return `
+          <div class="acct-row">
+            <div class="a-avatar" data-fb="${esc(name)}"><img src="https://mc-heads.net/avatar/${encodeURIComponent(name)}/80" alt=""/></div>
+            <div class="grow"><b>${esc(name)}</b><div class="a-type" style="color:${st ? 'var(--green)' : 'var(--dim)'}">${st ? t('friends.online', { s: esc(st.serverName) }) : t('friends.offline')}</div></div>
+            <button class="icon-btn" data-fr-remove="${esc(name)}" title="${t('common.delete')}">${ICONS.trash}</button>
+          </div>`;
+      }).join('') : `<p class="muted">${t('friends.none')}</p>`}`;
+  };
+
+  const m = modalShell(t('friends.title'), renderBody(), { cls: 'narrow' });
+  const saveFriends = async (names) => {
+    const clean = await api('friends:set', { names }).catch(() => null);
+    if (clean) state.settings.friends = clean;
+    await refreshFriends();
+    rerender();
+  };
+  const bind = () => {
+    const addFriend = () => {
+      const name = $('#fr-name', m.el).value.trim();
+      if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+        toast(t('friends.invalid'), 'error');
+        return;
+      }
+      saveFriends([...(state.settings.friends || []), name]);
+    };
+    $('#fr-add', m.el).addEventListener('click', addFriend);
+    $('#fr-name', m.el).addEventListener('keydown', (e) => { if (e.key === 'Enter') addFriend(); });
+    $$('[data-fr-remove]', m.el).forEach((b) => b.addEventListener('click', () => {
+      saveFriends((state.settings.friends || []).filter((n) => n !== b.dataset.frRemove));
+    }));
+  };
+  const rerender = () => {
+    if (!document.body.contains(m.el)) return;
+    $('.modal-body', m.el).innerHTML = renderBody();
+    bind();
+  };
+  bind();
 }
 
 function unseenAnnouncements() {
@@ -487,6 +597,7 @@ function renderSidebar() {
 
   $('#instances-label').textContent = t('sidebar.instances').toUpperCase();
   $('#instances-count').textContent = String(state.instances.length || '');
+  renderFriendsPanel();
   $('#btn-new').innerHTML = `${ICONS.plus}${t('sidebar.new').replace(/^＋\s*/, '')}`;
   $('#btn-import').innerHTML = `${ICONS.download}${t('sidebar.import').replace(/^⬇\s*/, '')}`;
 
@@ -1148,7 +1259,7 @@ function renderGlobalSettings(main) {
 
       <div class="settings-footer">
         <button class="btn gold" id="gs-save" style="padding:10px 24px;font-size:14px">${t('settings.saveBtn')}</button>
-        <span class="ver">IzLauncher v${esc(state.appInfo.version || 'dev')} · ${t('settings.madeBy')} 🍎</span>
+        <span class="ver">IzLauncher v${esc(state.appInfo.version || 'dev')} · ${t('settings.madeBy')}</span>
       </div>
     </div>`;
 
@@ -1734,6 +1845,7 @@ async function boot() {
   $('#btn-new').addEventListener('click', newInstanceModal);
   $('#btn-import').addEventListener('click', importModal);
   $('#account-chip').addEventListener('click', accountsModal);
+  $('#btn-friends-manage').addEventListener('click', friendsModal);
   let prevViewBeforeNews = 'library';
   $('#bell-btn').addEventListener('click', () => {
     if (state.view === 'news' || state.view === 'newsDetail') {
@@ -1765,6 +1877,7 @@ async function boot() {
       state.view = 'group';
     }
     startGroupAutoRefresh();
+    refreshFriends().catch(() => {});
     render();
     if (!state.settings.tutorialDone) startTutorial();
   } catch (err) {

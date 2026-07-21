@@ -3,13 +3,31 @@
 // batch metadata, hashes, update checks. Without a key we fall back to the
 // public website download endpoint, which redirects to the CDN; we learn the
 // file name from the final URL but get no hashes.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { fetchJson, USER_AGENT } from '../util.js';
 
 const API = 'https://api.curseforge.com/v1';
 const WEB_API = 'https://www.curseforge.com/api/v1';
 
+// A key baked at build time (CI writes src/main/baked.json from the
+// CURSEFORGE_API_KEY repo secret) serves the whole friend group — nobody has
+// to paste anything. A per-machine Settings key still overrides it.
+let bakedKeyCache = null;
+function bakedKey() {
+  if (bakedKeyCache !== null) return bakedKeyCache;
+  try {
+    const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'baked.json');
+    bakedKeyCache = String(JSON.parse(fs.readFileSync(file, 'utf8')).curseforgeApiKey || '');
+  } catch {
+    bakedKeyCache = '';
+  }
+  return bakedKeyCache;
+}
+
 function apiKey(settings) {
-  return settings?.get?.('curseforgeApiKey', '') || process.env.CF_API_KEY || '';
+  return settings?.get?.('curseforgeApiKey', '') || process.env.CF_API_KEY || bakedKey();
 }
 
 async function cfApi(pathname, settings, init = {}) {

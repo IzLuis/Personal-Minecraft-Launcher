@@ -99,10 +99,53 @@ export function registerIpc(getWindow) {
   });
 
   // Server status (SLP ping) + clipboard for "copy IP"
-  handle('server:ping', ({ address, port }) => pingServer(String(address), Number(port) || 25565));
+  const pingCache = new Map(); // "host:port" -> { at, res }
+  const cachedPing = async (address, port) => {
+    const key = `${address}:${port || 25565}`;
+    const hit = pingCache.get(key);
+    if (hit && Date.now() - hit.at < 45_000) return hit.res;
+    const res = await pingServer(String(address), Number(port) || 25565);
+    pingCache.set(key, { at: Date.now(), res });
+    return res;
+  };
+  handle('server:ping', ({ address, port }) => cachedPing(address, port));
   handle('app:copyText', async ({ text }) => {
     const { clipboard } = await import('electron');
     clipboard.writeText(String(text ?? ''));
+  });
+
+  // Friends (lite): match saved Minecraft usernames against the player sample
+  // each group server reports in its status ping. No accounts, no backend.
+  handle('friends:set', ({ names }) => {
+    const clean = [...new Set((names || []).map((n) => String(n).trim()).filter((n) => /^[A-Za-z0-9_]{3,16}$/.test(n)))].slice(0, 50);
+    s.set('friends', clean);
+    return clean;
+  });
+  handle('friends:status', async () => {
+    const friends = s.get('friends', []);
+    if (!friends.length) return { statuses: {}, sampleHidden: false };
+    const { config } = await getGroupConfig(s);
+    const servers = [];
+    const seen = new Set();
+    for (const p of config?.packs || []) {
+      if (!p.server?.address) continue;
+      const key = `${p.server.address}:${p.server.port || 25565}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      servers.push({ name: p.name, address: p.server.address, port: p.server.port });
+    }
+    const statuses = {};
+    let sampleHidden = false;
+    await Promise.all(servers.map(async (srv) => {
+      const res = await cachedPing(srv.address, srv.port);
+      if (!res.online) return;
+      if (res.playersOnline > 0 && (!res.sample || !res.sample.length)) sampleHidden = true;
+      const online = new Map((res.sample || []).map((n) => [n.toLowerCase(), n]));
+      for (const f of friends) {
+        if (online.has(f.toLowerCase()) && !statuses[f]) statuses[f] = { serverName: srv.name };
+      }
+    }));
+    return { statuses, sampleHidden };
   });
 
   // Accounts

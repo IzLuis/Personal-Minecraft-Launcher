@@ -82,6 +82,10 @@ export function pingServer(address, port = 25565, timeoutMs = 4000) {
           playersOnline: json.players?.online ?? 0,
           playersMax: json.players?.max ?? 0,
           version: json.version?.name || '',
+          // Sample of online player names (servers cap this ~12 and may hide it).
+          sample: Array.isArray(json.players?.sample)
+            ? json.players.sample.map((p) => String(p?.name || '')).filter(Boolean).slice(0, 24)
+            : [],
         });
       } catch {
         fail();

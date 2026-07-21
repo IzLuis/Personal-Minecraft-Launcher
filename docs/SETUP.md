@@ -18,10 +18,18 @@ remote control; 7–8 get friends installed; 9 is the routine you'll repeat fore
 3. Account chip (top-left) → **Sign in with Microsoft**.
 4. **＋ New** → pick a version → **Play** to sanity-check.
 
-## Task 2 — (Optional) CurseForge API key
+## Task 2 — (Optional) CurseForge API key, once for everyone
 
-Only if you'll use CurseForge packs/mods (Modrinth needs nothing): free key at
-https://console.curseforge.com → **API keys** → paste in **Settings → CurseForge**.
+Only if you'll use CurseForge packs/mods (Modrinth needs nothing):
+
+1. Get a free key at https://console.curseforge.com → **API keys**.
+2. On the launcher repo: **Settings → Secrets and variables → Actions →
+   New repository secret** → name `CURSEFORGE_API_KEY`, paste the key.
+3. Done — every installer built from now on carries the key baked in; friends
+   never configure anything. (A key pasted in the app's Settings still
+   overrides it per-machine, e.g. for your own dev runs.)
+
+Never put the key in `izlauncher.json` — that repo is public.
 
 ## Task 3 — Language
 

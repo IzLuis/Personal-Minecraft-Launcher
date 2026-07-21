@@ -78,6 +78,17 @@ links don't.
 **"Play & Join server" missing** — the instance has no server address: set it in the
 group config (`packs[].server`) or per-instance in Instance settings → Server.
 
+## Friends panel problems
+
+**A friend shows Offline while they're clearly playing** — presence comes from the
+server's public player sample, which vanilla servers cap at 12 random names and some
+servers hide entirely (`hide-online-players=true` in `server.properties`). For your own
+group servers, keep that setting `false` and the panel is reliable. Also check the
+username is spelled exactly (case doesn't matter).
+
+**Everyone shows Offline** — the panel only watches servers listed in the group config
+with a `server.address`; friends in singleplayer or on other servers won't appear.
+
 ## Launcher update problems
 
 **Friends don't get launcher updates** — updates come from GitHub Releases of the
