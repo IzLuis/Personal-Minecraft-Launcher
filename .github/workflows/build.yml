@@ -36,11 +36,16 @@ jobs:
           node-version: 22
       - run: npm ci
       - name: Bake group CurseForge API key (from repo secret, kept out of source)
-        if: ${{ secrets.CURSEFORGE_API_KEY != '' }}
-        run: node -e "require('fs').writeFileSync('src/main/baked.json', JSON.stringify({ curseforgeApiKey: process.env.CFK }))"
+        shell: bash
         env:
           CFK: ${{ secrets.CURSEFORGE_API_KEY }}
-        shell: bash
+        run: |
+          if [ -n "$CFK" ]; then
+            node -e "require('fs').writeFileSync('src/main/baked.json', JSON.stringify({ curseforgeApiKey: process.env.CFK }))"
+            echo "CurseForge key baked into the build."
+          else
+            echo "No CURSEFORGE_API_KEY secret set — building without a baked key."
+          fi
       - name: Build installers
         run: npx electron-builder --publish never
 
